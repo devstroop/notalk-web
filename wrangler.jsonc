@@ -13,19 +13,7 @@
     "enabled": true
   },
   "vars": {
-    "NOTALK_BACKEND_URL": "http://localhost:5000",
+    "NOTALK_BACKEND_URL": "https://api.notalk.app",
     "NOTALK_AUTH_SECRET_KEY": "changeme"
-  },
-  "env": {
-    "staging": {
-      "vars": {
-        "NOTALK_BACKEND_URL": "https://api.staging.notalk.dev"
-      }
-    },
-    "production": {
-      "vars": {
-        "NOTALK_BACKEND_URL": "https://api.notalk.dev"
-      }
-    }
   }
 }
