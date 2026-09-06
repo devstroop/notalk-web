@@ -1,0 +1,20 @@
+{{define "partial/public-footer"}}
+<footer class="border-t border-gray-200 bg-white">
+  <div class="max-w-6xl mx-auto px-6 py-8">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2.5">
+        <img src="/static/logo.svg" alt="NoTalk Logo" class="w-6 h-6">
+        <span class="text-sm font-semibold text-gray-700">NoTalk</span>
+      </div>
+      <nav class="flex items-center gap-6 text-sm text-gray-500">
+        <a href="/about" class="hover:text-gray-700 transition-colors">About</a>
+        <a href="/terms" class="hover:text-gray-700 transition-colors">Terms</a>
+        <a href="/privacy" class="hover:text-gray-700 transition-colors">Privacy</a>
+      </nav>
+    </div>
+    <div class="mt-6 pt-6 border-t border-gray-100 text-center text-xs text-gray-400">
+      &copy; {{now.Year}} NoTalk. All rights reserved.
+    </div>
+  </div>
+</footer>
+{{end}}
