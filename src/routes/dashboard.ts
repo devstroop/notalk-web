@@ -8,8 +8,16 @@ export function registerDashboardRoutes(app: Hono): void {
     const identity = getIdentity(c)!
     const token = getToken(c)!
     const flash = getFlash(c)
-    const { data } = await backend.json('GET', '/api/v1/accounts', token)
-    const accounts: any[] = Array.isArray(data) ? data : (data?.accounts ?? [])
+    let accounts: any[] = []
+    let totalUsers = 0
+    let backendDown = false
+    try {
+      const { data } = await backend.json('GET', '/api/v1/accounts', token)
+      accounts = Array.isArray(data) ? data : (data?.accounts ?? [])
+    } catch {
+      backendDown = true
+      accounts = []
+    }
     const rows = accounts.map((a: any) => ({
       id: a.id,
       accountName: a.account_name ?? a.accountName ?? '',
@@ -18,9 +26,12 @@ export function registerDashboardRoutes(app: Hono): void {
       createdAt: a.created_at ?? a.createdAt ?? new Date().toISOString(),
     }))
     const connected = rows.filter((r) => r.connected).length
-    let totalUsers = 0
-    const { status: us, data: udata } = await backend.json('GET', '/api/v1/users', token)
-    if (us === 200) totalUsers = Array.isArray(udata) ? udata.length : (udata?.users?.length ?? udata?.total ?? 0)
+    try {
+      const { status: us, data: udata } = await backend.json('GET', '/api/v1/users', token)
+      if (us === 200) totalUsers = Array.isArray(udata) ? udata.length : (udata?.users?.length ?? udata?.total ?? 0)
+    } catch {
+      backendDown = true
+    }
 
     return c.html(
       renderPage('dashboard', {

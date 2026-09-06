@@ -65,15 +65,18 @@ export function registerPublicRoutes(app: Hono): void {
   app.get('/pricing', async (c) => {
     const flash = getFlash(c)
     let plans: any[] = []
+    // 1) Try public fetch (works if backend allows anon)
     try {
-      const res = await fetch(`${process.env.NOTALK_BACKEND_URL || 'http://localhost:5000'}/api/v1/billing/plans`, {
+      const base = (process.env.NOTALK_BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '')
+      const res = await fetch(`${base}/api/v1/billing/plans`, {
         headers: { Accept: 'application/json' },
       })
       if (res.ok) {
         const j: any = await res.json()
-        plans = Array.isArray(j) ? j : (j?.plans ?? [])
+        plans = Array.isArray(j) ? j : (j?.plans ?? j?.data ?? [])
       }
     } catch {}
+    // 2) Try with user token
     if (plans.length === 0) {
       try {
         const { getToken } = await import('../middleware/auth.js')
@@ -83,6 +86,44 @@ export function registerPublicRoutes(app: Hono): void {
           plans = Array.isArray(data) ? data : (data?.plans ?? [])
         }
       } catch {}
+    }
+    // 3) Try with secret (so public pricing works even when backend requires auth)
+    if (plans.length === 0) {
+      try {
+        const { config } = await import('../config.js')
+        const secret = config.auth.secretKey
+        if (secret && secret !== 'changeme') {
+          const base = config.backend.url.replace(/\/$/, '')
+          const res = await fetch(`${base}/api/v1/billing/plans`, {
+            headers: { Authorization: `Bearer ${secret}`, Accept: 'application/json' },
+          })
+          if (res.ok) {
+            const j: any = await res.json()
+            plans = Array.isArray(j) ? j : (j?.plans ?? j?.data ?? [])
+          }
+        } else if (secret === 'changeme') {
+          // In hosted env with default secret, still try — workers have changeme
+          const base = config.backend.url.replace(/\/$/, '')
+          const res = await fetch(`${base}/api/v1/billing/plans`, {
+            headers: { Authorization: `Bearer ${secret}`, Accept: 'application/json' },
+          })
+          if (res.ok) {
+            const j: any = await res.json()
+            plans = Array.isArray(j) ? j : (j?.plans ?? j?.data ?? [])
+          }
+        }
+      } catch {}
+    }
+    // 4) Static fallback when backend is down or still empty — keeps pricing usable offline
+    if (plans.length === 0) {
+      plans = [
+        { ID: 'free', Name: 'Free', Description: 'For personal use', PriceCents: 0, Interval: 'month', Limits: { DailyMessages: 20, MaxAccounts: 1, APIAccess: false, MCPAccess: false, Webhooks: false, Copilot: false, Autopilot: false, DailyMessagesRaw: 20 } },
+        { ID: 'pro', Name: 'Professional', Description: 'For creators & teams', PriceCents: 1900, Interval: 'month', Limits: { DailyMessages: 0, MaxAccounts: 5, APIAccess: true, MCPAccess: true, Webhooks: true, Copilot: true, Autopilot: true } },
+        { ID: 'business', Name: 'Business', Description: 'Scale with confidence', PriceCents: 4900, Interval: 'month', Limits: { DailyMessages: 0, MaxAccounts: 0, APIAccess: true, MCPAccess: true, Webhooks: true, Copilot: true, Autopilot: true } },
+        { ID: 'enterprise', Name: 'Enterprise', Description: 'Custom & dedicated', PriceCents: 0, Interval: 'month', Limits: { DailyMessages: 0, MaxAccounts: 0, APIAccess: true, MCPAccess: true, Webhooks: true, Copilot: true, Autopilot: true } },
+      ]
+      // Normalize to shape pricing.html expects: .ID, .Name, .Description, .PriceCents, .Description, .Limits
+      plans = plans.map(p => ({ ...p, Limits: { DailyMessages: p.Limits.DailyMessages, MaxAccounts: p.Limits.MaxAccounts, APIAccess: p.Limits.APIAccess, MCPAccess: p.Limits.MCPAccess, Webhooks: p.Limits.Webhooks, Copilot: p.Limits.Copilot, Autopilot: p.Limits.Autopilot } }))
     }
     return c.html(
       renderPage('pricing', {
