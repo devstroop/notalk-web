@@ -1,0 +1,55 @@
+# Hono + Node + TypeScript — notalk (NoTalk-Web)
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+
+# Env
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.playwright-mcp/
+playwright-report/
+test-results/
+coverage/
+.nyc_output/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# TypeScript
+*.tsbuildinfo
+
+# Hono / Node
+*.js.map
+
+# Runtime / secrets
+notalk.log
+notalk-*.log
+/tmp/
