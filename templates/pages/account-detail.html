@@ -99,7 +99,7 @@
     <div x-show="tab === 'session'" class="bg-white rounded-xl border border-gray-200 p-6">
       <div id="session-content"
            hx-get="/accounts/{{.Data.Account.ID}}/session-tab"
-           hx-trigger="load, every 3s"
+           hx-trigger="load, sessionConnected from:body"
            hx-swap="innerHTML">
         <div class="flex flex-col items-center justify-center py-12">
           <svg class="w-8 h-8 text-gray-300 mx-auto mb-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>

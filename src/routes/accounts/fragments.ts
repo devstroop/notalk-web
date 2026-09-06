@@ -13,6 +13,12 @@ export function registerAccountsFragments(app: Hono): void {
       ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>Connected</span>`
       : `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"><span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>Disconnected</span>`
     c.header('Content-Type', 'text/html; charset=utf-8')
+    // Only trigger session-tab refresh when becoming connected — this replaces the previous
+    // `every 3s` polling of the whole session tab which caused QR to flash "Loading QR code…"
+    // on every poll. Now QR loads once (hx-trigger="load" on #qr-area) and stays; the 2s
+    // badge poll will trigger this only when connected, so the tab flips to "Session Active"
+    // without flashing while disconnected.
+    if (connected) c.header('HX-Trigger', 'sessionConnected')
     return c.html(html)
   })
 
