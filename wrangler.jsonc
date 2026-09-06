@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "notalk-web",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-07",
+  "compatibility_flags": ["nodejs_compat"],
+  "find_additional_modules": true,
+  "rules": [{ "type": "Text", "globs": ["**/*.html"], "fallthrough": true }],
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "single-page-application"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "NOTALK_BACKEND_URL": "http://localhost:5000",
+    "NOTALK_AUTH_SECRET_KEY": "changeme"
+  },
+  "env": {
+    "staging": {
+      "vars": {
+        "NOTALK_BACKEND_URL": "https://api.staging.notalk.dev"
+      }
+    },
+    "production": {
+      "vars": {
+        "NOTALK_BACKEND_URL": "https://api.notalk.dev"
+      }
+    }
+  }
+}

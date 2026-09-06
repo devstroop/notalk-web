@@ -11,11 +11,14 @@ import { registerAssistantRoutes } from './routes/assistant.js'
 import { registerAdminRoutes } from './routes/admin.js'
 import { registerBillingRoutes } from './routes/billing.js'
 import { serve } from '@hono/node-server'
+import { serveStatic } from '@hono/node-server/serve-static'
 import { config } from './config.js'
 import { getFlash, getIdentity } from './middleware/auth.js'
 import { renderPage } from './lib/render/index.js'
 
 const app = createApp()
+app.use('/static/*', serveStatic({ root: './public' }))
+app.get('/favicon.ico', (c) => c.redirect('/static/favicon.svg', 301))
 
 registerPublicRoutes(app)
 registerAuthRoutes(app)
