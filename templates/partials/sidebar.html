@@ -41,10 +41,7 @@
         <span x-show="sidebarOpen" x-transition class="flex-1">Accounts</span>
         <span x-show="!sidebarOpen" class="sidebar-tooltip">Accounts</span>
       </a>
-      <button x-show="sidebarOpen" @click.stop="grpAccounts = !grpAccounts; open = grpAccounts"
-              class="p-1 -mr-1 rounded-md text-gray-400 hover:text-white hover:bg-white/10 transition-colors shrink-0">
-        <svg :class="open ? 'rotate-180' : ''" class="w-4 h-4 transition-transform duration-200 opacity-40" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-      </button>
+      <svg x-show="sidebarOpen" @click.stop="grpAccounts = !grpAccounts; open = grpAccounts" :class="open ? 'rotate-180' : ''" class="w-4 h-4 ml-auto shrink-0 transition-transform duration-200 opacity-40 cursor-pointer" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
     </div>
     <div x-show="sidebarOpen && grpAccounts" x-transition class="space-y-px mt-px">
       <a href="/accounts?new=1" title="New Account" class="{{$child}}">
