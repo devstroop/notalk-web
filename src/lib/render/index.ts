@@ -1,0 +1,931 @@
+import { readdirSync } from 'node:fs'
+import { raw, getTemplatesDir } from './cache.js'
+import { normalizeAccounts } from '../normalize.js'
+import { timeAgo } from '../utils.js'
+import { hasPermission, type GoPageData as PageData } from '../../types/index.js'
+
+// Auto-discover layouts/partials/components instead of hardcoding
+function discover(dir: string): string[] {
+  try {
+    return readdirSync(`${getTemplatesDir()}/${dir}`)
+      .filter((f) => f.endsWith('.html'))
+      .map((f) => f.replace('.html', ''))
+  } catch {
+    return []
+  }
+}
+
+const layoutsProd = discover('layouts')
+const partialsProd = discover('partials')
+const componentsProd = discover('components')
+
+function getLayouts(): string[] {
+  return process.env.NODE_ENV === 'production' ? layoutsProd : discover('layouts')
+}
+function getPartials(): string[] {
+  return process.env.NODE_ENV === 'production' ? partialsProd : discover('partials')
+}
+function getComponents(): string[] {
+  return process.env.NODE_ENV === 'production' ? componentsProd : discover('components')
+}
+
+// Keep explicit fallback for pageLayout but allow auto-discovery for missing
+const pageLayout: Record<string, string> = {
+  home: 'home',
+  about: 'home',
+  terms: 'home',
+  privacy: 'home',
+  dashboard: 'base',
+  accounts: 'base',
+  'account-detail': 'base',
+  users: 'base',
+  roles: 'base',
+  'api-keys': 'base',
+  messaging: 'base',
+  mcp: 'base',
+  settings: 'base',
+  assistant: 'base',
+  autopilot: 'base',
+  billing: 'base',
+  'billing-plans': 'base',
+  'billing-subscriptions': 'base',
+  'billing-usage': 'base',
+  'admin-config': 'base',
+  subscription: 'base',
+  login: 'auth',
+  register: 'auth',
+  'forgot-password': 'auth',
+  'reset-password': 'auth',
+  error: 'auth',
+  'ai-settings': 'base',
+}
+
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+function escAttr(s: string): string {
+  return esc(s)
+}
+
+function hasPerm(id: any, perm: string): boolean {
+  return hasPermission(id as any, perm)
+}
+
+function expandRangeBlocks(html: string, data: PageData): string {
+  const accounts = normalizeAccounts(data.Data?.Accounts ?? data.Data?.accounts ?? [])
+  if (html.includes('window._accountConnected')) {
+    const connMap = accounts.map((a) => `"${escAttr(a.ID)}": ${a.Connected ? 'true' : 'false'}`).join(',\n  ')
+    const metaMap = accounts.map((a) => `"${escAttr(a.ID)}": { name: "${escAttr(a.AccountName)}", phone: "${escAttr(a.PhoneNumber)}" }`).join(',\n  ')
+    html = html.replace(/window\._accountConnected\s*=\s*\{[\s\S]*?\};/, `window._accountConnected = {\n  ${connMap}\n};`)
+    html = html.replace(/window\._accountMeta\s*=\s*\{[\s\S]*?\};/, `window._accountMeta = {\n  ${metaMap}\n};`)
+    if (html.includes('{{if .Data.Accounts}}') && html.includes('{{range .Data.Accounts}}')) {
+      let pickerHtml = ''
+      if (accounts.length === 0) {
+        pickerHtml = `<div class="px-4 py-3 text-sm text-gray-400 text-center">No accounts yet. <a href="/accounts" class="text-brand-800 hover:underline">Create one</a></div>`
+      } else {
+        pickerHtml = accounts
+          .map(
+            (a) => `
+          <button type="button"
+                  @click="sender = '${escAttr(a.ID)}'; open = false; onAccountChange()"
+                  class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left group"
+                  :class="sender === '${escAttr(a.ID)}' ? 'bg-brand-50' : ''">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all"
+                  :class="sender === '${escAttr(a.ID)}' ? 'bg-brand-500 text-gray-900' : 'bg-gray-100 text-gray-600'">
+               ${escAttr((a.AccountName?.[0] ?? '?').toUpperCase())}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">${esc(a.AccountName)}</p>
+              ${a.PhoneNumber ? `<p class="text-xs text-gray-400">${esc(a.PhoneNumber)}</p>` : ''}
+            </div>
+            <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${a.Connected ? 'text-green-700 bg-green-100' : 'text-amber-700 bg-amber-100'}">
+              <span class="w-1.5 h-1.5 rounded-full ${a.Connected ? 'bg-green-500' : 'bg-amber-400'}"></span>
+              ${a.Connected ? 'Online' : 'Offline'}
+            </span>
+          </button>`
+          )
+          .join('')
+      }
+      const fullPickerRe = /\{\{if \.Data\.Accounts\}\}\s*\{\{range \.Data\.Accounts\}\}[\s\S]*?\{\{end\}\}\s*\{\{else\}\}[\s\S]*?\{\{end\}\}/g
+      if (fullPickerRe.test(html)) {
+        html = html.replace(fullPickerRe, pickerHtml)
+      } else {
+        html = html.replace(/\{\{range \.Data\.Accounts\}\}[\s\S]*?\{\{end\}\}/g, pickerHtml)
+      }
+    }
+  }
+  return html
+}
+
+function renderGoConditionals(html: string, data: PageData): string {
+  html = html.replace(
+    /\{\{if hasPrefix \.Version "v"\}\}([\s\S]*?)\{\{else if eq \.Version "dev"\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{end\}\}/g,
+    (_m, a, b, c) => {
+      if (data.Version.startsWith('v')) return a
+      if (data.Version === 'dev') return b
+      return c
+    }
+  )
+  if (data.Flash) {
+    // Separate container class conditionals (no else) — use negative lookahead to avoid matching the icon chain which has {{else
+    html = html.replace(/\{\{if eq \.Flash\.Type "success"\}\}((?:(?!\{\{else).)*?)\{\{end\}\}/g, (_m, inner) => (data.Flash!.Type === 'success' ? inner : ''))
+    html = html.replace(/\{\{if eq \.Flash\.Type "error"\}\}((?:(?!\{\{else).)*?)\{\{end\}\}/g, (_m, inner) => (data.Flash!.Type === 'error' ? inner : ''))
+    html = html.replace(/\{\{if eq \.Flash\.Type "info"\}\}((?:(?!\{\{else).)*?)\{\{end\}\}/g, (_m, inner) => (data.Flash!.Type === 'info' ? inner : ''))
+    // Icon chain: {{if eq "success"}}...{{else if eq "error"}}...{{else}}...{{end}}
+    html = html.replace(
+      /\{\{if eq \.Flash\.Type "success"\}\}([\s\S]*?)\{\{else if eq \.Flash\.Type "error"\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{end\}\}/g,
+      (_m, a, b, c) => {
+        if (data.Flash!.Type === 'success') return a
+        if (data.Flash!.Type === 'error') return b
+        return c
+      }
+    )
+    html = html.replace(/\{\{if \.Flash\}\}/g, '').replace(/\{\{if \.Flash\.Type[^}]+\}\}/g, '')
+    html = html.replace(/\{\{\.Flash\.Type\}\}/g, esc(data.Flash.Type))
+    html = html.replace(/\{\{\.Flash\.Message\}\}/g, esc(data.Flash.Message))
+  } else {
+    html = html.replace(/\{\{if \.Flash\}\}[\s\S]*?<\/div>\s*\{\{end\}\}/g, '')
+    if (html.includes('{{if .Flash}}')) html = html.replace(/\{\{if \.Flash\}\}[\s\S]*?\{\{end\}\}/g, '')
+  }
+  if (data.Identity) {
+    html = html.replace(/\{\{if \.Identity\}\}, \{\{\.Identity\.Username\}\}\{\{end\}\}/g, `, ${esc(data.Identity.username)}`)
+    html = html.replace(/\{\{\.Identity\.Username\}\}/g, esc(data.Identity.username))
+  } else {
+    html = html.replace(/\{\{if \.Identity\}\}[\s\S]*?\{\{end\}\}/g, '')
+  }
+  html = html.replace(/\{\{if \.Identity\.HasPermission "\*"[^}]*\}\}/g, hasPerm(data.Identity, '*') ? '' : '<!--noPerm-->')
+  html = html.replace(/<!--noPerm-->[\s\S]*?\{\{end\}\}/g, '')
+  // Handle Go template variables for sidebar ({{- $item := "..." -}} / {{$item}} etc)
+  // Must be before generic if/else stripping so active states can be evaluated
+  const goVars: Record<string, string> = {}
+  // Extract definitions like {{- $item   := "flex ..." -}}
+  html = html.replace(/\{\{-?\s*\$(\w+)\s*:=\s*"([^"]*)"\s*-?\}\}/g, (_m, name, val) => {
+    goVars[name] = val
+    return ''
+  })
+  // Also handle single-quoted variants (just in case)
+  html = html.replace(/\{\{-?\s*\$(\w+)\s*:=\s*'([^']*)'\s*-?\}\}/g, (_m, name, val) => {
+    goVars[name] = val
+    return ''
+  })
+  // Fallback defaults if not found (e.g., when partial not yet inlined or definitions stripped elsewhere)
+  if (!goVars['item']) goVars['item'] = 'flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors'
+  if (!goVars['child']) goVars['child'] = 'flex items-center gap-2.5 ml-4 px-3 py-2 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors'
+  if (!goVars['active']) goVars['active'] = 'bg-white/10 text-white'
+  if (!goVars['label']) goVars['label'] = 'px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500'
+  // Handle {{if eq .Page "xxx"}}{{$active}}{{end}} and {{if or (eq .Page "a") (eq .Page "b")}}{{$active}}{{end}}
+  html = html.replace(/\{\{if eq \.Page "([^"]+)"\}\}\s*\{\{\$active\}\}\s*\{\{end\}\}/g, (_m, p) => (data.Page === p ? goVars['active'] : ''))
+  html = html.replace(/\{\{if or\s*\(eq \.Page "([^"]+)"\)\s*\(eq \.Page "([^"]+)"\)\s*\}\}\s*\{\{\$active\}\}\s*\{\{end\}\}/g, (_m, p1, p2) => (data.Page === p1 || data.Page === p2 ? goVars['active'] : ''))
+  // Generic or with more args (e.g., 3+) — fallback: check if Page is among listed strings
+  html = html.replace(/\{\{if or([^}]+)\}\}\s*\{\{\$active\}\}\s*\{\{end\}\}/g, (m, inner) => {
+    const pages = [...inner.matchAll(/"([^"]+)"/g)].map((x) => x[1])
+    return pages.includes(data.Page) ? goVars['active'] : ''
+  })
+  // Replace remaining {{$var}} usages (e.g., class="{{$item}}", class="{{$label}}")
+  html = html.replace(/\{\{\$(\w+)\}\}/g, (_m, name) => goVars[name] ?? '')
+  html = html.replace(/\{\{-?\s*\$[^}]*\}\}/g, '')
+  // Handle assistant AIEnabled and generic Data conditionals before generic stripping (must be after goVars but before generic if)
+  const getDataByPath = (path: string): any => {
+    const parts = path.split('.')
+    let cur: any = data.Data
+    for (const p of parts) {
+      if (cur == null) return undefined
+      cur = cur[p]
+    }
+    return cur
+  }
+  // Specific AIEnabled (needs to be before generic Data handling to preserve true/false)
+  const aiEnabled = (data.Data as any)?.AIEnabled
+  if (typeof aiEnabled === 'boolean') {
+    html = html.replace(/\{\{if \.Data\.AIEnabled\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{end\}\}/g, (_m, a, b) => aiEnabled ? a : b)
+    html = html.replace(/\{\{if not \.Data\.AIEnabled\}\}([\s\S]*?)\{\{end\}\}/g, (_m, inner) => !aiEnabled ? inner : '')
+    html = html.replace(/\{\{if \.Data\.AIEnabled\}\}true\{\{else\}\}false\{\{end\}\}/g, aiEnabled ? 'true' : 'false')
+  }
+  // Generic Data.Config / Data.Connected / Data.Logs etc with else - handle User with nested if separately
+  const handleUserIf = (html: string): string => {
+    const startTag = '{{if .Data.User}}'
+    const elseTag = '{{else}}'
+    const endTag = '{{end}}'
+    let result = '', lastIndex = 0
+    while (true) {
+      const startIdx = html.indexOf(startTag, lastIndex)
+      if (startIdx === -1) { result += html.slice(lastIndex); break }
+      result += html.slice(lastIndex, startIdx)
+      let depth = 1, searchIdx = startIdx + startTag.length, elseIdx = -1, endIdx = -1
+      while (depth > 0 && searchIdx < html.length) {
+        const nextIf = html.indexOf('{{if', searchIdx)
+        const nextRange = html.indexOf('{{range', searchIdx)
+        const nextWith = html.indexOf('{{with', searchIdx)
+        let nextOpen = -1
+        if (nextIf !== -1) nextOpen = nextIf
+        if (nextRange !== -1 && (nextOpen === -1 || nextRange < nextOpen)) nextOpen = nextRange
+        if (nextWith !== -1 && (nextOpen === -1 || nextWith < nextOpen)) nextOpen = nextWith
+        const nextElse = html.indexOf(elseTag, searchIdx)
+        const nextEnd = html.indexOf(endTag, searchIdx)
+        const cands: any[] = []
+        if (nextOpen !== -1) cands.push({idx: nextOpen, type: 'if'})
+        if (nextElse !== -1) cands.push({idx: nextElse, type: 'else'})
+        if (nextEnd !== -1) cands.push({idx: nextEnd, type: 'end'})
+        if (cands.length===0) break
+        cands.sort((a,b)=>a.idx-b.idx)
+        const nxt = cands[0]
+        if (nxt.type==='if') { depth++; searchIdx = nxt.idx+4 }
+        else if (nxt.type==='else' && depth===1 && elseIdx===-1) { elseIdx = nxt.idx; searchIdx = nxt.idx+elseTag.length }
+        else if (nxt.type==='end') { depth--; if (depth===0) { endIdx = nxt.idx; break } searchIdx = nxt.idx+endTag.length }
+        else searchIdx = nxt.idx+4
+      }
+      if (endIdx===-1) { result += html.slice(startIdx); break }
+      const ifBlock = elseIdx!==-1 ? html.slice(startIdx+startTag.length, elseIdx) : html.slice(startIdx+startTag.length, endIdx)
+      const elseBlock = elseIdx!==-1 ? html.slice(elseIdx+elseTag.length, endIdx) : ''
+      const v = getDataByPath('User')
+      const truthy = Array.isArray(v) ? v.length>0 : !!v
+      result += truthy ? ifBlock : elseBlock
+      lastIndex = endIdx + endTag.length
+    }
+    return result
+  }
+  html = handleUserIf(html)
+  html = html.replace(/\{\{if \.Data\.([A-Za-z0-9_.]+)\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{end\}\}/g, (m, path, a, b) => {
+    const v = getDataByPath(path)
+    const truthy = Array.isArray(v) ? v.length > 0 : !!v
+    return truthy ? a : b
+  })
+  html = html.replace(/\{\{if not \.Data\.([A-Za-z0-9_.]+)\}\}([\s\S]*?)\{\{end\}\}/g, (m, path, inner) => {
+    const v = getDataByPath(path)
+    const truthy = Array.isArray(v) ? v.length > 0 : !!v
+    return !truthy ? inner : ''
+  })
+  html = html.replace(/\{\{if \.Data\.([A-Za-z0-9_.]+)\}\}([\s\S]*?)\{\{end\}\}/g, (m, path, inner) => {
+    const v = getDataByPath(path)
+    const truthy = Array.isArray(v) ? v.length > 0 : !!v
+    return truthy ? inner : ''
+  })
+  // Handle inline checked and true/false for Config
+  html = html.replace(/\{\{if \.Data\.Config\.Enabled\}\}checked\{\{end\}\}/g, getDataByPath('Config.Enabled') ? 'checked' : '')
+  html = html.replace(/\{\{if \.Data\.Config\.EscalationEnabled\}\}checked\{\{end\}\}/g, getDataByPath('Config.EscalationEnabled') ? 'checked' : '')
+  html = html.replace(/\{\{if \.Data\.Config\.EscalationEnabled\}\}true\{\{else\}\}false\{\{end\}\}/g, getDataByPath('Config.EscalationEnabled') ? 'true' : 'false')
+  html = html.replace(/\{\{if \.Data\.Config\.Enabled\}\}true\{\{else\}\}false\{\{end\}\}/g, getDataByPath('Config.Enabled') ? 'true' : 'false')
+  // Settings: handle User RoleName eq and User Email
+  html = html.replace(/\{\{if eq \.Data\.User\.RoleName "admin"\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{end\}\}/g, (_m, a, b) => {
+    const v = getDataByPath('User.RoleName') ?? getDataByPath('User.role_name') ?? getDataByPath('User.roleName')
+    return v === 'admin' ? a : b
+  })
+  html = html.replace(/\{\{if \.Data\.User\.Email\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{end\}\}/g, (_m, a, b) => {
+    const v = getDataByPath('User.Email') ?? getDataByPath('User.email')
+    return v ? a : b
+  })
+  // Settings: handle Currency and Timezone selected
+  html = html.replace(/\{\{if eq \.Data\.Currency "([^"]+)"\}\}selected\{\{end\}\}/g, (_m, val) => {
+    const cur = getDataByPath('Currency')
+    return cur === val ? 'selected' : ''
+  })
+  html = html.replace(/\{\{if eq \.Data\.Timezone "([^"]+)"\}\}selected\{\{end\}\}/g, (_m, val) => {
+    const tz = getDataByPath('Timezone')
+    return tz === val ? 'selected' : ''
+  })
+  html = html.replace(/\{\{if[^}]*\}\}/g, '').replace(/\{\{else\}\}/g, '').replace(/\{\{end\}\}/g, '')
+  return html
+}
+
+function interpolateData(html: string, data: PageData): string {
+  const d: any = data.Data ?? {}
+  if (typeof d.RegistrationEnabled === 'boolean') {
+    html = html.replace(/\{\{if \.Data\.RegistrationEnabled\}\}([\s\S]*?)\{\{end\}\}/g, (_m, inner) => (d.RegistrationEnabled ? inner : ''))
+  }
+  if (d.Token) html = html.replace(/\{\{\.Data\.Token\}\}/g, esc(String(d.Token)))
+  html = html.replace(/\{\{\.Data\.TotalAccounts\}\}/g, String(d.TotalAccounts ?? 0))
+  html = html.replace(/\{\{\.Data\.Connected\}\}/g, String(d.Connected ?? 0))
+  html = html.replace(/\{\{\.Data\.Disconnected\}\}/g, String(d.Disconnected ?? 0))
+  html = html.replace(/\{\{\.Data\.TotalUsers\}\}/g, String(d.TotalUsers ?? 0))
+  // Account-detail: support Account fields and webhook/proxy JSON (raw, not escaped)
+  if (d.Account) {
+    const acc: any = d.Account
+    html = html.replace(/\{\{\.Data\.Account\.ID\}\}/g, escAttr(String(acc.ID ?? acc.id ?? '')))
+    html = html.replace(/\{\{\.Data\.Account\.AccountName\}\}/g, esc(String(acc.AccountName ?? acc.accountName ?? '')))
+    html = html.replace(/\{\{\.Data\.Account\.PhoneNumber\}\}/g, esc(String(acc.PhoneNumber ?? acc.phoneNumber ?? '')))
+    // Fallback lower-case variants
+    html = html.replace(/\{\{\.Data\.Account\.id\}\}/g, escAttr(String(acc.ID ?? '')))
+  }
+  // Settings: support User fields
+  if (d.User) {
+    const u: any = d.User
+    html = html.replace(/\{\{\.Data\.User\.Username\}\}/g, esc(String(u.Username ?? u.username ?? '')))
+    html = html.replace(/\{\{\.Data\.User\.Email\}\}/g, esc(String(u.Email ?? u.email ?? '')))
+    html = html.replace(/\{\{\.Data\.User\.RoleName\}\}/g, esc(String(u.RoleName ?? u.role_name ?? u.roleName ?? '')))
+    html = html.replace(/\{\{\.Data\.User\.CreatedAt\}\}/g, esc(String(u.CreatedAt ?? u.created_at ?? '')))
+    html = html.replace(/\{\{timeAgo \.Data\.User\.CreatedAt\}\}/g, esc(timeAgo(String(u.CreatedAt ?? u.created_at ?? ''))))
+  }
+  // Settings: generic fields
+  if (d.AppName !== undefined) html = html.replace(/\{\{\.Data\.AppName\}\}/g, esc(String(d.AppName ?? '')))
+  if (d.AppTagline !== undefined) html = html.replace(/\{\{\.Data\.AppTagline\}\}/g, esc(String(d.AppTagline ?? '')))
+  if (d.Currency !== undefined) html = html.replace(/\{\{\.Data\.Currency\}\}/g, esc(String(d.Currency ?? '')))
+  if (d.Timezone !== undefined) html = html.replace(/\{\{\.Data\.Timezone\}\}/g, esc(String(d.Timezone ?? '')))
+  if (d.WebhookJSON !== undefined) html = html.replace(/\{\{\.Data\.WebhookJSON\}\}/g, String(d.WebhookJSON ?? 'null'))
+  if (d.ProxyJSON !== undefined) html = html.replace(/\{\{\.Data\.ProxyJSON\}\}/g, String(d.ProxyJSON ?? 'null'))
+  // Assistant: AIEnabled, Provider, Model, History
+  if (typeof d.AIEnabled === 'boolean') {
+    // Handle {{if .Data.AIEnabled}} ... {{else}} ... {{end}} for assistant header
+    html = html.replace(/\{\{if \.Data\.AIEnabled\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{end\}\}/g, (_m, a, b) => (d.AIEnabled ? a : b))
+    html = html.replace(/\{\{if not \.Data\.AIEnabled\}\}([\s\S]*?)\{\{end\}\}/g, (_m, inner) => (!d.AIEnabled ? inner : ''))
+  }
+  if (d.Provider !== undefined) html = html.replace(/\{\{\.Data\.Provider\}\}/g, esc(String(d.Provider ?? '')))
+  if (d.Model !== undefined) html = html.replace(/\{\{\.Data\.Model\}\}/g, esc(String(d.Model ?? '')))
+  if (d.History !== undefined) {
+    const hist = d.History ?? []
+    html = html.replace(/\{\{\.Data\.History \| json\}\}/g, JSON.stringify(hist))
+    html = html.replace(/\{\{\.Data\.History\}\}/g, JSON.stringify(hist))
+  }
+  // Handle {{if .Data.AIEnabled}}true{{else}}false{{end}} inside Alpine disabled attributes
+  html = html.replace(/\{\{if \.Data\.AIEnabled\}\}true\{\{else\}\}false\{\{end\}\}/g, d.AIEnabled ? 'true' : 'false')
+  // New: support year helper that was previously stripped
+  html = html.replace(/\{\{now\.Year\}\}/g, String(new Date().getFullYear()))
+  return html
+}
+
+function interpolateHelpers(html: string): string {
+  // Keep hx-* and Alpine attributes, strip only truly unknown Go templates
+  // Previously stripped all {{...}}, now preserve known helpers and strip rest
+  return html.replace(/\{\{[^}]+\}\}/g, (m) => {
+    if (m.includes('hx-') || m.includes('x-') || m.includes('@click')) return m
+    // Preserve already handled ones, otherwise strip
+    return ''
+  })
+}
+
+function evalPageTemplate(page: string, data: PageData): string {
+  const layouts = getLayouts()
+  const partials = getPartials()
+  const components = getComponents()
+  const layoutName = pageLayout[page] ?? (layouts.includes(page) ? page : 'base')
+  const layoutRaw = raw(`layouts/${layoutName}.html`)
+  const pageRaw = raw(`pages/${page}.html`)
+  const contentMatch = pageRaw.match(/\{\{define "content"\}\}([\s\S]*)\{\{end\}\}\s*$/)
+  const contentRaw = contentMatch
+    ? contentMatch[1]
+    : (() => {
+        let c = pageRaw.replace(/\{\{define "content"\}\}/, '')
+        const lastEnd = c.lastIndexOf('{{end}}')
+        if (lastEnd !== -1) c = c.slice(0, lastEnd)
+        return c
+      })()
+  let content = contentRaw
+  if (page === 'accounts') {
+    const accounts = normalizeAccounts(data.Data?.Accounts ?? [])
+    let rowsHtml = ''
+    if (accounts.length === 0) {
+      rowsHtml = `<tr><td colspan="5"><div class="px-5 py-12 text-center"><p class="text-sm text-gray-500">No accounts yet.</p><a href="/accounts" class="mt-3 inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-brand-600">Create account</a></div></td></tr>`
+    } else {
+      rowsHtml = accounts
+        .map(
+          (a) => `
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-5 py-3"><a href="/accounts/${escAttr(a.ID)}" class="font-medium text-gray-900 hover:text-brand-800">${esc(a.AccountName)}</a></td>
+            <td class="px-5 py-3 text-gray-500">${esc(a.PhoneNumber)}</td>
+            <td class="px-5 py-3">${a.Connected ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Connected</span>` : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Disconnected</span>`}</td>
+            <td class="px-5 py-3 text-gray-500">${esc(timeAgo(a.CreatedAt))}</td>
+            <td class="px-5 py-3 text-right"><div class="flex items-center justify-end gap-3"><a href="/accounts/${escAttr(a.ID)}/autopilot" class="text-sm font-medium text-violet-600">Autopilot</a><a href="/accounts/${escAttr(a.ID)}" class="text-brand-800 text-sm font-medium">Manage →</a></div></td>
+          </tr>`
+        )
+        .join('')
+    }
+    content = content.replace(/<tbody class="divide-y divide-gray-50">[\s\S]*?<\/tbody>/, `<tbody class="divide-y divide-gray-50">${rowsHtml}</tbody>`)
+    content = content.replace(/\{\{[^}]+\}\}/g, (m) => (m.includes('hx-') || m.includes('x-') ? m : ''))
+  } else if (page === 'dashboard') {
+    const accounts = normalizeAccounts(data.Data?.Accounts ?? [])
+    let recentHtml = ''
+    if (accounts.length === 0) {
+      recentHtml = `<div class="px-5 py-12 text-center"><p class="text-sm text-gray-500">No accounts yet.</p><a href="/accounts" class="mt-3 inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-brand-600">Create account</a></div>`
+    } else {
+      recentHtml = accounts
+        .map(
+          (a) => `
+        <div class="px-5 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600">${(a.AccountName?.[0] ?? '?').toUpperCase()}</div>
+            <div><p class="text-sm font-medium text-gray-900">${a.AccountName}</p><p class="text-xs text-gray-500">${a.PhoneNumber}</p></div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 text-xs ${a.Connected ? 'text-green-700 bg-green-50 border-green-200' : 'text-gray-500 bg-gray-50 border-gray-200'} border rounded-full px-2.5 py-1"><span class="w-2 h-2 rounded-full ${a.Connected ? 'bg-green-500' : 'bg-gray-400'}"></span>${a.Connected ? 'Connected' : 'Disconnected'}</span>
+            <a href="/accounts/${a.ID}" class="text-xs font-medium text-brand-800 hover:text-brand-900">View →</a>
+          </div>
+        </div>`
+        )
+        .join('')
+    }
+    content = content.replace(/<div class="divide-y divide-gray-100">[\s\S]*?<a href="\/accounts" class="mt-3[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/, `<div class="divide-y divide-gray-100">${recentHtml}</div>\n    </div>\n  </div>`)
+    content = content.replace(/\{\{range \.Data\.Accounts\}\}[\s\S]*?\{\{end\}\}/g, recentHtml)
+  } else if (page === 'users') {
+    const users: any[] = Array.isArray((data.Data as any)?.Users) ? (data.Data as any).Users : ((data.Data as any)?.users ?? [])
+    const roles: any[] = Array.isArray((data.Data as any)?.Roles) ? (data.Data as any).Roles : ((data.Data as any)?.roles ?? [])
+    const rolesOptions = roles.map((r: any) => `<option value="${escAttr(String(r.ID ?? r.id ?? ''))}">${esc(String(r.Name ?? r.name ?? ''))}</option>`).join('')
+    // Handle {{range .Data.Roles}} for select options (appears in Create/Edit modals) - do this first before handling the main if
+    content = content.replace(/\{\{range \.Data\.Roles\}\}[\s\S]*?\{\{end\}\}/g, rolesOptions)
+    // Handle main users table {{if .Data.Users}} ... {{else}} ... {{end}} with proper nesting via helper
+    const hasUsers = users.length > 0
+    // Helper to correctly handle nested {{if}} by finding matching {{end}}
+    const handleUsersIf = (html: string): string => {
+      const startTag = '{{if .Data.Users}}'
+      const elseTag = '{{else}}'
+      const endTag = '{{end}}'
+      let result = ''
+      let lastIndex = 0
+      while (true) {
+        const startIdx = html.indexOf(startTag, lastIndex)
+        if (startIdx === -1) {
+          result += html.slice(lastIndex)
+          break
+        }
+        result += html.slice(lastIndex, startIdx)
+        // Find matching end by counting nesting (handle {{if, {{range, {{with)
+        let depth = 1
+        let searchIdx = startIdx + startTag.length
+        let elseIdx = -1
+        let endIdx = -1
+        while (depth > 0 && searchIdx < html.length) {
+          const nextIf = html.indexOf('{{if', searchIdx)
+          const nextRange = html.indexOf('{{range', searchIdx)
+          const nextWith = html.indexOf('{{with', searchIdx)
+          let nextOpen = -1
+          if (nextIf !== -1) nextOpen = nextIf
+          if (nextRange !== -1 && (nextOpen === -1 || nextRange < nextOpen)) nextOpen = nextRange
+          if (nextWith !== -1 && (nextOpen === -1 || nextWith < nextOpen)) nextOpen = nextWith
+          const nextElse = html.indexOf(elseTag, searchIdx)
+          const nextEnd = html.indexOf(endTag, searchIdx)
+          const candidates = [
+            nextOpen !== -1 ? { idx: nextOpen, type: 'if' as const } : null,
+            nextElse !== -1 ? { idx: nextElse, type: 'else' as const } : null,
+            nextEnd !== -1 ? { idx: nextEnd, type: 'end' as const } : null,
+          ].filter(Boolean) as Array<{ idx: number; type: 'if' | 'else' | 'end' }>
+          if (candidates.length === 0) break
+          candidates.sort((a, b) => a.idx - b.idx)
+          const next = candidates[0]
+          if (next.type === 'if') {
+            depth++
+            searchIdx = next.idx + 4
+          } else if (next.type === 'else' && depth === 1 && elseIdx === -1) {
+            elseIdx = next.idx
+            searchIdx = next.idx + elseTag.length
+          } else if (next.type === 'end') {
+            depth--
+            if (depth === 0) {
+              endIdx = next.idx
+              break
+            }
+            searchIdx = next.idx + endTag.length
+          } else {
+            searchIdx = next.idx + 4
+          }
+        }
+        if (endIdx === -1) {
+          result += html.slice(startIdx)
+          break
+        }
+        const ifBlock = elseIdx !== -1 ? html.slice(startIdx + startTag.length, elseIdx) : html.slice(startIdx + startTag.length, endIdx)
+        const elseBlock = elseIdx !== -1 ? html.slice(elseIdx + elseTag.length, endIdx) : ''
+        if (hasUsers) {
+          const rowsHtml = users.map((u: any) => {
+            const enabled = !!(u.Enabled ?? (u as any).enabled)
+            const roleName = String(u.RoleName ?? (u as any).role_name ?? u.roleName ?? '')
+            const roleClass = roleName === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+            const uEmail: any = (u as any).Email ?? (u as any).email
+            const emailCell = uEmail ? esc(String(uEmail)) : '<span class="text-gray-300">—</span>'
+            const statusCell = enabled ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>' : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Disabled</span>'
+            return `
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-4 py-3 font-medium text-gray-900">${esc(String(u.Username ?? u.username ?? ''))}</td>
+          <td class="px-4 py-3 text-gray-500">${emailCell}</td>
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleClass}">
+              ${esc(roleName)}
+            </span>
+          </td>
+          <td class="px-4 py-3">
+            ${statusCell}
+          </td>
+          <td class="px-4 py-3 text-gray-500">${esc(timeAgo(String(u.CreatedAt ?? u.created_at ?? '')))}</td>
+          <td class="px-4 py-3 text-right">
+            <div class="flex items-center justify-end gap-1">
+              <button @click="editUser = { id: '${escAttr(String(u.ID ?? (u as any).id ?? ''))}', username: '${escAttr(String(u.Username ?? (u as any).username ?? ''))}', email: '${escAttr(String((u as any).Email ?? (u as any).email ?? ''))}', roleID: '${escAttr(String(u.RoleID ?? (u as any).role_id ?? (u as any).roleID ?? ''))}', enabled: ${enabled ? 'true' : 'false'} }"
+                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+              </button>
+              <button @click="resetUser = { id: '${escAttr(String(u.ID ?? (u as any).id ?? ''))}', username: '${escAttr(String(u.Username ?? (u as any).username ?? ''))}' }"
+                class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Reset Password">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </button>
+              <form method="POST" action="/admin/users/${escAttr(String(u.ID ?? (u as any).id ?? ''))}/delete" hx-boost="false"
+                onsubmit="return confirm('Delete user ${escAttr(String(u.Username ?? (u as any).username ?? ''))}? This cannot be undone.')">
+                <button type="submit"
+                  class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>`
+          }).join('')
+          let tableHtml = ifBlock
+          const beforeMatch = tableHtml.match(/<tbody[^>]*>[\s\S]*?<\/tbody>/)
+          tableHtml = tableHtml.replace(/<tbody[^>]*>[\s\S]*?<\/tbody>/, () => `<tbody class="divide-y divide-gray-100">${rowsHtml}</tbody>`)
+          tableHtml = tableHtml.replace(/\{\{[^}]+\}\}/g, (m: string) => (m.includes('hx-')||m.includes('x-')?m:''))
+          result += tableHtml
+        } else {
+          result += elseBlock
+        }
+        lastIndex = endIdx + endTag.length
+      }
+      return result
+    }
+    content = handleUsersIf(content)
+    // Fallback: if still has stray {{range .Data.Users}} (when no outer if), expand it
+    if (content.includes('{{range .Data.Users}}')) {
+      const users2: any[] = users
+      const rowsHtml2 = users2.map((u: any) => {
+        const enabled = !!u.Enabled
+        return `<tr><td>${esc(String(u.Username ?? ''))}</td><td>${enabled ? 'true' : 'false'}</td></tr>`
+      }).join('')
+      content = content.replace(/\{\{range \.Data\.Users\}\}[\s\S]*?\{\{end\}\}/g, rowsHtml2)
+    }
+    // Ensure any remaining {{range .Data.Roles}} (if not already replaced) is handled
+    if (content.includes('{{range .Data.Roles}}')) {
+      content = content.replace(/\{\{range \.Data\.Roles\}\}[\s\S]*?\{\{end\}\}/g, rolesOptions)
+    }
+    // Handle inline {{if .Email}} etc that may remain
+    content = content.replace(/\{\{if \.Email\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{end\}\}/g, (_m, a, b) => a.includes('{{.Email}}') ? a.replace(/\{\{\.Email\}\}/g, (data.Data as any)?.Users?.[0]?.Email ? esc(String((data.Data as any).Users[0].Email)) : '') : b)
+  } else if (page === 'roles') {
+    const roles: any[] = Array.isArray((data.Data as any)?.Roles) ? (data.Data as any).Roles : ((data.Data as any)?.roles ?? [])
+    const hasRoles = roles.length > 0
+    // Use helper to correctly handle nested {{if}} for {{if .Data.Roles}} ... {{else}} ... {{end}}
+    const handleRolesIfInner = (html: string): string => {
+      const startTag = '{{if .Data.Roles}}'
+      const elseTag = '{{else}}'
+      const endTag = '{{end}}'
+      let result = ''
+      let lastIndex = 0
+      while (true) {
+        const startIdx = html.indexOf(startTag, lastIndex)
+        if (startIdx === -1) {
+          result += html.slice(lastIndex)
+          break
+        }
+        result += html.slice(lastIndex, startIdx)
+        let depth = 1
+        let searchIdx = startIdx + startTag.length
+        let elseIdx = -1
+        let endIdx = -1
+        while (depth > 0 && searchIdx < html.length) {
+          const nextIf = html.indexOf('{{if', searchIdx)
+          const nextRange = html.indexOf('{{range', searchIdx)
+          const nextWith = html.indexOf('{{with', searchIdx)
+          let nextOpen = -1
+          if (nextIf !== -1) nextOpen = nextIf
+          if (nextRange !== -1 && (nextOpen === -1 || nextRange < nextOpen)) nextOpen = nextRange
+          if (nextWith !== -1 && (nextOpen === -1 || nextWith < nextOpen)) nextOpen = nextWith
+          const nextElse = html.indexOf(elseTag, searchIdx)
+          const nextEnd = html.indexOf(endTag, searchIdx)
+          const candidates = [
+            nextOpen !== -1 ? { idx: nextOpen, type: 'if' as const } : null,
+            nextElse !== -1 ? { idx: nextElse, type: 'else' as const } : null,
+            nextEnd !== -1 ? { idx: nextEnd, type: 'end' as const } : null,
+          ].filter(Boolean) as Array<{ idx: number; type: 'if' | 'else' | 'end' }>
+          if (candidates.length === 0) break
+          candidates.sort((a, b) => a.idx - b.idx)
+          const next = candidates[0]
+          if (next.type === 'if') {
+            depth++
+            searchIdx = next.idx + 4
+          } else if (next.type === 'else' && depth === 1 && elseIdx === -1) {
+            elseIdx = next.idx
+            searchIdx = next.idx + elseTag.length
+          } else if (next.type === 'end') {
+            depth--
+            if (depth === 0) {
+              endIdx = next.idx
+              break
+            }
+            searchIdx = next.idx + endTag.length
+          } else {
+            searchIdx = next.idx + 4
+          }
+        }
+        if (endIdx === -1) {
+          result += html.slice(startIdx)
+          break
+        }
+        const ifBlock = elseIdx !== -1 ? html.slice(startIdx + startTag.length, elseIdx) : html.slice(startIdx + startTag.length, endIdx)
+        const elseBlock = elseIdx !== -1 ? html.slice(elseIdx + elseTag.length, endIdx) : ''
+        if (hasRoles) {
+          const rowsHtml = roles.map((r: any) => {
+            const isBuiltin = !!(r.IsBuiltin ?? r.is_builtin ?? (r as any).isBuiltin)
+            const permsRaw: any = (r as any).Permissions ?? (r as any).permissions
+            const perms: string[] = Array.isArray(permsRaw) ? permsRaw : (typeof permsRaw === 'string' ? permsRaw.split(',').map((s: string) => s.trim()).filter(Boolean) : [])
+            const permsHtml = perms.map((p) => `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600 font-mono">${esc(p)}</span>`).join('')
+            const typeBadge = isBuiltin ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Built-in</span>' : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Custom</span>'
+            const permsStr = perms.join(', ')
+            const rName: string = String((r as any).Name ?? (r as any).name ?? '')
+            const rDesc: string | undefined = (r as any).Description ?? (r as any).description
+            const rUserCount: any = (r as any).UserCount ?? (r as any).user_count ?? (r as any).userCount ?? ''
+            return `
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-4 py-3 font-medium text-gray-900">${esc(rName)}</td>
+          <td class="px-4 py-3 text-gray-500">${rDesc ? esc(String(rDesc)) : '<span class="text-gray-300">—</span>'}</td>
+          <td class="px-4 py-3">
+            <div class="flex flex-wrap gap-1">
+              ${permsHtml}
+            </div>
+          </td>
+          <td class="px-4 py-3 text-gray-500">${esc(String(rUserCount))}</td>
+          <td class="px-4 py-3">
+            ${typeBadge}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <div class="flex items-center justify-end gap-1">
+              <button @click="editRole = { id: '${escAttr(String((r as any).ID ?? (r as any).id ?? ''))}', name: '${escAttr(rName)}', description: '${escAttr(String(rDesc ?? ''))}', permissions: '${escAttr(permsStr)}', isBuiltin: ${isBuiltin ? 'true' : 'false'} }"
+                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+              </button>
+              ${!isBuiltin ? `<form method="POST" action="/admin/roles/${escAttr(String((r as any).ID ?? (r as any).id ?? ''))}/delete" hx-boost="false"
+                onsubmit="return confirm('Delete role ${escAttr(rName)}?')">
+                <button type="submit"
+                  class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+              </form>` : ''}
+            </div>
+          </td>
+        </tr>`
+        }).join('')
+        let tableHtml = ifBlock
+        tableHtml = tableHtml.replace(/<tbody[^>]*>[\s\S]*?<\/tbody>/, `<tbody class="divide-y divide-gray-100">${rowsHtml}</tbody>`)
+        tableHtml = tableHtml.replace(/\{\{[^}]+\}\}/g, (m: string) => (m.includes('hx-') || m.includes('x-') ? m : ''))
+        result += tableHtml
+      } else {
+        result += elseBlock
+      }
+      lastIndex = endIdx + endTag.length
+      }
+      return result
+    }
+    content = handleRolesIfInner(content)
+    // Fallback for stray {{range .Data.Roles}} (when no outer if)
+    if (content.includes('{{range .Data.Roles}}')) {
+      const roles2: any[] = roles
+      const rolesOptionsFallback = roles2.map((r: any) => `<option value="${escAttr(String(r.ID ?? r.id ?? ''))}">${esc(String(r.Name ?? r.name ?? ''))}</option>`).join('')
+      content = content.replace(/\{\{range \.Data\.Roles\}\}[\s\S]*?\{\{end\}\}/g, rolesOptionsFallback)
+    }
+    } else if (page === 'api-keys') {
+    const keys: any[] = Array.isArray((data.Data as any)?.Keys) ? (data.Data as any).Keys : ((data.Data as any)?.keys ?? (data.Data as any)?.api_keys ?? [])
+    const accounts = normalizeAccounts((data.Data as any)?.Accounts ?? (data.Data as any)?.accounts ?? [])
+    // Handle accounts dropdown for create modal
+    const accountsOptions = accounts.map((a: any) => `<option value="${escAttr(String(a.ID))}">${esc(a.AccountName)} (${esc(a.PhoneNumber)})</option>`).join('')
+    content = content.replace(/\{\{range \.Data\.Accounts\}\}[\s\S]*?\{\{end\}\}/g, accountsOptions || '')
+    // Handle keys table with proper nesting for {{if .Data.Keys}} ... {{else}} ... {{end}}
+    const hasKeys = keys.length > 0
+    const handleKeysIf = (html: string): string => {
+      const startTag = '{{if .Data.Keys}}'
+      const elseTag = '{{else}}'
+      const endTag = '{{end}}'
+      let result = ''
+      let lastIndex = 0
+      while (true) {
+        const startIdx = html.indexOf(startTag, lastIndex)
+        if (startIdx === -1) { result += html.slice(lastIndex); break }
+        result += html.slice(lastIndex, startIdx)
+        let depth = 1, searchIdx = startIdx + startTag.length, elseIdx = -1, endIdx = -1
+        while (depth > 0 && searchIdx < html.length) {
+          const nextIf = html.indexOf('{{if', searchIdx)
+          const nextRange = html.indexOf('{{range', searchIdx)
+          const nextWith = html.indexOf('{{with', searchIdx)
+          let nextOpen = -1
+          if (nextIf !== -1) nextOpen = nextIf
+          if (nextRange !== -1 && (nextOpen === -1 || nextRange < nextOpen)) nextOpen = nextRange
+          if (nextWith !== -1 && (nextOpen === -1 || nextWith < nextOpen)) nextOpen = nextWith
+          const nextElse = html.indexOf(elseTag, searchIdx)
+          const nextEnd = html.indexOf(endTag, searchIdx)
+          const candidates: Array<{idx:number,type:'if'|'else'|'end'}> = [
+            nextOpen !== -1 ? {idx: nextOpen, type: 'if'} : null,
+            nextElse !== -1 ? {idx: nextElse, type: 'else'} : null,
+            nextEnd !== -1 ? {idx: nextEnd, type: 'end'} : null,
+          ].filter(Boolean) as any
+          if (candidates.length===0) break
+          candidates.sort((a,b)=>a.idx-b.idx)
+          const next = candidates[0]
+          if (next.type==='if') { depth++; searchIdx = next.idx+4 }
+          else if (next.type==='else' && depth===1 && elseIdx===-1) { elseIdx = next.idx; searchIdx = next.idx+elseTag.length }
+          else if (next.type==='end') { depth--; if (depth===0) { endIdx = next.idx; break } searchIdx = next.idx+endTag.length }
+          else searchIdx = next.idx+4
+        }
+        if (endIdx===-1) { result += html.slice(startIdx); break }
+        const ifBlock = elseIdx!==-1 ? html.slice(startIdx+startTag.length, elseIdx) : html.slice(startIdx+startTag.length, endIdx)
+        const elseBlock = elseIdx!==-1 ? html.slice(elseIdx+elseTag.length, endIdx) : ''
+        if (hasKeys) {
+          const rowsHtml = keys.map((k: any) => {
+            const kName = String(k.Name ?? k.name ?? '')
+            const kPrefix = String(k.Prefix ?? k.prefix ?? '')
+            const kAccountID = String(k.AccountID ?? k.account_id ?? k.accountId ?? '')
+            const kEnabled = !!(k.Enabled ?? k.enabled)
+            const kLastUsed = String(k.LastUsed ?? k.last_used ?? '')
+            const kExpiresAt = String(k.ExpiresAt ?? k.expires_at ?? '')
+            const kCreatedAt = String(k.CreatedAt ?? k.created_at ?? '')
+            const kID = String(k.ID ?? k.id ?? '')
+            const accountCell = kAccountID ? esc(kAccountID.slice(0,8)) : '<span class="text-gray-300">all</span>'
+            const statusBadge = kEnabled ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>' : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Disabled</span>'
+            const lastUsedCell = kLastUsed ? esc(timeAgo(kLastUsed)) : '<span class="text-gray-300">never</span>'
+            const expiresCell = kExpiresAt ? esc(timeAgo(kExpiresAt)) : '<span class="text-gray-300">never</span>'
+            return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3 font-medium text-gray-900">${esc(kName)}</td><td class="px-4 py-3"><code class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">${esc(kPrefix)}…</code></td><td class="px-4 py-3 text-gray-500">${accountCell}</td><td class="px-4 py-3">${statusBadge}</td><td class="px-4 py-3 text-gray-500">${lastUsedCell}</td><td class="px-4 py-3 text-gray-500">${expiresCell}</td><td class="px-4 py-3 text-gray-500">${esc(timeAgo(kCreatedAt))}</td><td class="px-4 py-3 text-right"><button @click="deleteID = '${escAttr(kID)}'; deleteName = '${escAttr(kName)}'; deleteOpen = true" class="text-red-500 hover:text-red-700 text-sm font-medium">Revoke</button></td></tr>`
+          }).join('')
+          let tableHtml = ifBlock
+          const m = ifBlock.match(/<tbody[^>]*>[\s\S]*?<\/tbody>/)
+          tableHtml = tableHtml.replace(/<tbody[^>]*>[\s\S]*?<\/tbody>/, () => `<tbody class="divide-y divide-gray-100">${rowsHtml}</tbody>`)
+          tableHtml = tableHtml.replace(/\{\{[^}]+\}\}/g, (m: string) => (m.includes('hx-')||m.includes('x-')?m:''))
+          result += tableHtml
+        } else {
+          result += elseBlock
+        }
+        lastIndex = endIdx + endTag.length
+      }
+      return result
+    }
+    content = handleKeysIf(content)
+    // Fallback for any remaining {{range .Data.Keys}} outside if
+    if (content.includes('{{range .Data.Keys}}')) {
+      const fallbackRows = keys.map((k: any) => `<tr><td>${esc(String(k.Name ?? k.name ?? ''))}</td></tr>`).join('')
+      content = content.replace(/\{\{range \.Data\.Keys\}\}[\s\S]*?\{\{end\}\}/g, fallbackRows)
+    }
+    if (content.includes('{{range .Data.Accounts}}')) {
+      content = content.replace(/\{\{range \.Data\.Accounts\}\}[\s\S]*?\{\{end\}\}/g, accountsOptions)
+    }
+    } else if (page === 'billing' || page === 'billing-plans' || page === 'billing-subscriptions' || page === 'billing-usage' || page === 'admin-config' || page === 'subscription') {
+    // Billing pages: handle Plans, Subscriptions, Usage, and divCents helper
+    const plans: any[] = Array.isArray((data.Data as any)?.Plans) ? (data.Data as any).Plans : ((data.Data as any)?.plans ?? [])
+    const subs: any[] = Array.isArray((data.Data as any)?.Subscriptions) ? (data.Data as any).Subscriptions : ((data.Data as any)?.subscriptions ?? [])
+    const usage: any[] = Array.isArray((data.Data as any)?.Usage) ? (data.Data as any).Usage : ((data.Data as any)?.usage ?? [])
+    // Handle divCents helper: {{divCents .PriceCents}} -> price/100
+    content = content.replace(/\{\{divCents \.PriceCents\}\}/g, (m) => {
+      // Will be handled per plan in range, but also handle standalone
+      return m
+    })
+    // Handle Plans table
+    if (plans.length > 0 || content.includes('{{range .Data.Plans}}')) {
+      const hasPlans = plans.length > 0
+      const handlePlansIf = (html: string): string => {
+        const startTag = '{{if .Data.Plans}}'
+        const elseTag = '{{else}}'
+        const endTag = '{{end}}'
+        let result = '', lastIndex = 0
+        while (true) {
+          const startIdx = html.indexOf(startTag, lastIndex)
+          if (startIdx === -1) { result += html.slice(lastIndex); break }
+          result += html.slice(lastIndex, startIdx)
+          let depth = 1, searchIdx = startIdx + startTag.length, elseIdx = -1, endIdx = -1
+          while (depth > 0 && searchIdx < html.length) {
+            const nextIf = html.indexOf('{{if', searchIdx)
+            const nextRange = html.indexOf('{{range', searchIdx)
+            const nextWith = html.indexOf('{{with', searchIdx)
+            let nextOpen = -1
+            if (nextIf !== -1) nextOpen = nextIf
+            if (nextRange !== -1 && (nextOpen === -1 || nextRange < nextOpen)) nextOpen = nextRange
+            if (nextWith !== -1 && (nextOpen === -1 || nextWith < nextOpen)) nextOpen = nextWith
+            const nextElse = html.indexOf(elseTag, searchIdx)
+            const nextEnd = html.indexOf(endTag, searchIdx)
+            const cands: any[] = []
+            if (nextOpen !== -1) cands.push({idx: nextOpen, type: 'if'})
+            if (nextElse !== -1) cands.push({idx: nextElse, type: 'else'})
+            if (nextEnd !== -1) cands.push({idx: nextEnd, type: 'end'})
+            if (cands.length === 0) break
+            cands.sort((a,b)=>a.idx-b.idx)
+            const nxt = cands[0]
+            if (nxt.type === 'if') { depth++; searchIdx = nxt.idx+4 }
+            else if (nxt.type === 'else' && depth===1 && elseIdx===-1) { elseIdx = nxt.idx; searchIdx = nxt.idx+elseTag.length }
+            else if (nxt.type === 'end') { depth--; if (depth===0) { endIdx = nxt.idx; break } searchIdx = nxt.idx+endTag.length }
+            else searchIdx = nxt.idx+4
+          }
+          if (endIdx===-1) { result += html.slice(startIdx); break }
+          const ifBlock = elseIdx!==-1 ? html.slice(startIdx+startTag.length, elseIdx) : html.slice(startIdx+startTag.length, endIdx)
+          const elseBlock = elseIdx!==-1 ? html.slice(elseIdx+elseTag.length, endIdx) : ''
+          if (hasPlans) {
+            const rowsHtml = plans.map((p: any) => {
+              const limits = p.PlanLimits ?? p.planLimits ?? p.limits ?? {}
+              // Handle limits as JSON string or object
+              let lim: any = limits
+              if (typeof limits === 'string') { try { lim = JSON.parse(limits) } catch { lim = {} } }
+              const daily = lim.DailyMessages ?? lim.daily_messages ?? 0
+              const maxAccts = lim.MaxAccounts ?? lim.max_accounts ?? 0
+              const apiAccess = !!(lim.APIAccess ?? lim.api_access)
+              const mcpAccess = !!(lim.MCPAccess ?? lim.mcp_access)
+              const webhooks = !!(lim.Webhooks ?? lim.webhooks)
+              const copilot = !!(lim.Copilot ?? lim.copilot)
+              const autopilot = !!(lim.Autopilot ?? lim.autopilot)
+              const priceCents = p.PriceCents ?? p.price_cents ?? p.PriceCents ?? 0
+              const isDefault = !!(p.IsDefault ?? p.is_default)
+              const divCents = Math.floor(priceCents/100)
+              return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3 font-mono text-xs text-gray-500">${esc(String(p.ID ?? p.id ?? ''))}</td><td class="px-4 py-3 font-medium text-gray-900">${esc(String(p.Name ?? p.name ?? ''))}</td><td class="px-4 py-3 text-gray-700">$${divCents}/mo</td><td class="px-4 py-3 text-gray-700">${daily===0?'∞':daily}</td><td class="px-4 py-3 text-gray-700">${maxAccts===0?'∞':maxAccts}</td><td class="px-4 py-3"><div class="flex gap-1 flex-wrap">${apiAccess?'<span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-700">API</span>':''}${mcpAccess?'<span class="px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700">MCP</span>':''}${webhooks?'<span class="px-1.5 py-0.5 rounded text-xs bg-amber-100 text-amber-700">Hooks</span>':''}${copilot?'<span class="px-1.5 py-0.5 rounded text-xs bg-violet-100 text-violet-700">Copilot</span>':''}${autopilot?'<span class="px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700">Autopilot</span>':''}</div></td><td class="px-4 py-3">${isDefault?'<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Yes</span>':'<span class="text-gray-300">—</span>'}</td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-1"><button @click="editPlan = { id: '${escAttr(String(p.ID ?? p.id ?? ''))}', name: '${escAttr(String(p.Name ?? p.name ?? ''))}', description: '${escAttr(String(p.Description ?? p.description ?? ''))}', priceCents: ${priceCents}, dailyMessages: ${daily}, maxAccounts: ${maxAccts}, apiAccess: ${apiAccess}, mcpAccess: ${mcpAccess}, webhooks: ${webhooks}, copilot: ${copilot}, autopilot: ${autopilot}, isDefault: ${isDefault} }" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><form method="POST" action="/admin/billing/plans/${escAttr(String(p.ID ?? p.id ?? ''))}/delete" hx-boost="false" onsubmit="return confirm('Delete plan ${escAttr(String(p.Name ?? p.name ?? ''))}? Plans with active subscriptions cannot be deleted.')"><button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></form></div></td></tr>`
+            }).join('')
+            let tableHtml = ifBlock
+            tableHtml = tableHtml.replace(/<tbody[^>]*>[\s\S]*?<\/tbody>/, () => `<tbody class="divide-y divide-gray-100">${rowsHtml}</tbody>`)
+            tableHtml = tableHtml.replace(/\{\{[^}]+\}\}/g, (m: string) => (m.includes('hx-')||m.includes('x-')?m:''))
+            // Handle divCents inside
+            tableHtml = tableHtml.replace(/\$\{\{divCents \.PriceCents\}\}/g, (m) => {
+              // This is handled per row above, but keep for safety
+              return m
+            })
+            result += tableHtml
+          } else {
+            result += elseBlock
+          }
+          lastIndex = endIdx + endTag.length
+        }
+        return result
+      }
+      content = handlePlansIf(content)
+    }
+    // Handle Subscriptions and Usage similarly (simple fallback)
+    if (subs.length > 0) {
+      const subsRows = subs.map((s: any) => {
+        const username = String(s.Username ?? s.username ?? s.UserID ?? s.user_id ?? '')
+        const planName = String(s.PlanName ?? s.plan_name ?? s.PlanID ?? s.plan_id ?? '')
+        const status = String(s.Status ?? s.status ?? '')
+        const period = String(s.Period ?? s.period ?? s.CurrentPeriodEnd ?? s.current_period_end ?? '')
+        let badge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">${esc(status)}</span>`
+        if (status==='active') badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>'
+        else if (status==='trialing') badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Trial</span>'
+        else if (status==='canceled') badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Canceled</span>'
+        return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3 font-medium text-gray-900">${esc(username)}</td><td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${esc(planName)}</span></td><td class="px-4 py-3">${badge}</td><td class="px-4 py-3 text-gray-500 text-xs">${esc(period)}</td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-1"><button @click="assignSub = { userID: '${escAttr(String(s.UserID ?? s.user_id ?? ''))}', planID: '${escAttr(String(s.PlanID ?? s.plan_id ?? ''))}' }" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Change Plan"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><form method="POST" action="/admin/billing/subscriptions/${escAttr(String(s.UserID ?? s.user_id ?? ''))}/delete" hx-boost="false" onsubmit="return confirm('Remove subscription for ${escAttr(username)}?')"><button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></form></div></td></tr>`
+      }).join('')
+      // Replace subscriptions table if present
+      if (content.includes('{{range .Data.Subscriptions}}')) {
+        content = content.replace(/<tbody[^>]*>[\s\S]*?<\/tbody>/, `<tbody class="divide-y divide-gray-100">${subsRows}</tbody>`)
+        // Handle the if/else for subscriptions
+        content = content.replace(/\{\{if \.Data\.Subscriptions\}\}[\s\S]*?\{\{else\}\}[\s\S]*?\{\{end\}\}/g, (m) => {
+          // If we have subs, keep the table, else keep the else block
+          return subs.length > 0 ? m.slice(m.indexOf('<table'), m.indexOf('{{else}}')) + `<tbody class="divide-y divide-gray-100">${subsRows}</tbody>` + m.slice(m.indexOf('</table>')+8, m.indexOf('{{else}}')) : m.slice(m.indexOf('{{else}}')+8, m.indexOf('{{end}}'))
+        })
+      }
+    }
+    if (usage.length > 0) {
+      const usageRows = usage.map((u: any) => {
+        const username = String(u.Username ?? u.username ?? u.UserID ?? u.user_id ?? '')
+        const msgs = String(u.Messages ?? u.messages ?? 0)
+        return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3 font-medium text-gray-900">${esc(username)}</td><td class="px-4 py-3 text-gray-700">${esc(msgs)}</td></tr>`
+      }).join('')
+      if (content.includes('{{range .Data.Usage}}')) {
+        content = content.replace(/<tbody[^>]*>[\s\S]*?<\/tbody>/, `<tbody class="divide-y divide-gray-100">${usageRows}</tbody>`)
+      }
+    }
+    // Handle remaining {{range}} for Plans in assign modal
+    if (content.includes('{{range .Data.Plans}}') && plans.length > 0) {
+      const opts = plans.map((p: any) => `<option value="${escAttr(String(p.ID ?? p.id ?? ''))}">${esc(String(p.Name ?? p.name ?? ''))} — $${Math.floor((p.PriceCents ?? p.price_cents ?? 0)/100)}/mo</option>`).join('')
+      content = content.replace(/\{\{range \.Data\.Plans\}\}[\s\S]*?\{\{end\}\}/g, opts)
+    }
+    // Clean up any remaining Go templates like divCents, PlanLimits etc.
+    content = content.replace(/\{\{\$lim\.[^}]+\}\}/g, '')
+    content = content.replace(/\{\{divCents [^}]+\}\}/g, '')
+    content = content.replace(/\{\{\.PlanLimits\}\}/g, '')
+    } else if (page === 'messaging') {
+    content = expandRangeBlocks(content, data)
+  } else if (page === 'autopilot') {
+    content = expandRangeBlocks(content, data)
+  } else {
+    content = expandRangeBlocks(content, data)
+  }
+  let html = layoutRaw.replace(/\{\{define "layout"\}\}/, '').replace(/\{\{end\}\}\s*$/, '')
+  // Auto-discovered partials
+  for (const p of partials.length ? partials : ['sidebar', 'navbar', 'toast', 'public-nav', 'public-footer']) {
+    const re = new RegExp(`\\{\\{template "partial/${p}"[^}]*\\}\\}`, 'g')
+    let part = raw(`partials/${p}.html`)
+    part = part.replace(/\{\{define "[^"]*"\}\}/, '')
+    part = part.replace(/\{\{end\}\}\s*$/, '')
+    html = html.replace(re, part)
+  }
+  for (const c of components.length ? components : ['badge', 'stat-card', 'empty-state']) {
+    const re = new RegExp(`\\{\\{template "component/${c}"[^}]*\\}\\}`, 'g')
+    let comp = raw(`components/${c}.html`)
+    comp = comp.replace(/\{\{define "[^"]*"\}\}/, '')
+    comp = comp.replace(/\{\{end\}\}\s*$/, '')
+    html = html.replace(re, comp)
+  }
+  html = html.replace(/\{\{template "content"[^}]*\}\}/g, content)
+  const repl: Array<[RegExp, string]> = [
+    [/\{\{\.Title\}\}/g, esc(data.Title)],
+    [/\{\{\.Heading\}\}/g, esc(data.Heading ?? '')],
+    [/\{\{\.Version\}\}/g, esc(data.Version)],
+    [/\{\{\.Page\}\}/g, esc(data.Page)],
+  ]
+  for (const [re, val] of repl) html = html.replace(re, val)
+  html = renderGoConditionals(html, data)
+  html = interpolateData(html, data)
+  html = interpolateHelpers(html)
+  if (html.includes('window._accountConnected') && html.includes('{{range')) {
+    html = html.replace(/\{\{range[^}]+\}\}[\s\S]*?\{\{end\}\}/g, '')
+    html = expandRangeBlocks(html, data)
+  }
+  return html
+}
+
+export function renderPage(page: string, data: PageData): string {
+  return evalPageTemplate(page, data)
+}
+
+export function renderFragment(html: string): string {
+  return html
+}
