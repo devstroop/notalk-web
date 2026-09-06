@@ -13,7 +13,7 @@ module.exports = {
     'bg-white/10', 'text-white',
     'ml-4', 'ml-6', 'pr-3',
     'px-3', 'pt-4', 'pb-1', 'text-[10px]', 'font-semibold', 'uppercase', 'tracking-wider', 'text-gray-500',
-    'bg-gray-900', 'border-white/5', 'w-64', 'lg:w-64', 'lg:w-[4.25rem]', 'translate-x-0', '-translate-x-full', 'lg:translate-x-0',
+    'bg-gray-900', 'border-white/5', 'w-64', 'lg:w-64', 'lg:w-14', 'translate-x-0', '-translate-x-full', 'lg:translate-x-0',
     'flex-1', 'shrink-0', 'w-4', 'h-4', 'w-5', 'h-5', 'opacity-40', 'rotate-180',
   ],
   theme: {
