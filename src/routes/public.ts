@@ -8,6 +8,7 @@ export function registerPublicRoutes(app: Hono): void {
     const identity = getIdentity(c)
     if (identity) return c.redirect('/dashboard', 302)
     const flash = getFlash(c)
+    const { config } = await import('../config.js')
     return c.html(
       renderPage('home', {
         Title: 'NoTalk — Social Engagement Made Simple',
@@ -15,13 +16,14 @@ export function registerPublicRoutes(app: Hono): void {
         Version: '1.0.0',
         Identity: identity,
         Flash: flash ? { Type: flash.Type, Message: flash.Message } : null,
-        Data: {},
+        Data: { RegistrationEnabled: config.auth.registrationEnabled },
       })
     )
   })
 
-  app.get('/about', (c) => {
+  app.get('/about', async (c) => {
     const flash = getFlash(c)
+    const { config } = await import('../config.js')
     return c.html(
       renderPage('about', {
         Title: 'About — NoTalk',
@@ -29,13 +31,14 @@ export function registerPublicRoutes(app: Hono): void {
         Version: '1.0.0',
         Identity: getIdentity(c),
         Flash: flash ? { Type: flash.Type, Message: flash.Message } : null,
-        Data: {},
+        Data: { RegistrationEnabled: config.auth.registrationEnabled },
       })
     )
   })
 
-  app.get('/terms', (c) => {
+  app.get('/terms', async (c) => {
     const flash = getFlash(c)
+    const { config } = await import('../config.js')
     return c.html(
       renderPage('terms', {
         Title: 'Terms — NoTalk',
@@ -43,13 +46,14 @@ export function registerPublicRoutes(app: Hono): void {
         Version: '1.0.0',
         Identity: getIdentity(c),
         Flash: flash ? { Type: flash.Type, Message: flash.Message } : null,
-        Data: {},
+        Data: { RegistrationEnabled: config.auth.registrationEnabled },
       })
     )
   })
 
-  app.get('/privacy', (c) => {
+  app.get('/privacy', async (c) => {
     const flash = getFlash(c)
+    const { config } = await import('../config.js')
     return c.html(
       renderPage('privacy', {
         Title: 'Privacy — NoTalk',
@@ -57,7 +61,7 @@ export function registerPublicRoutes(app: Hono): void {
         Version: '1.0.0',
         Identity: getIdentity(c),
         Flash: flash ? { Type: flash.Type, Message: flash.Message } : null,
-        Data: {},
+        Data: { RegistrationEnabled: config.auth.registrationEnabled },
       })
     )
   })
@@ -125,6 +129,7 @@ export function registerPublicRoutes(app: Hono): void {
       // Normalize to shape pricing.html expects: .ID, .Name, .Description, .PriceCents, .Description, .Limits
       plans = plans.map(p => ({ ...p, Limits: { DailyMessages: p.Limits.DailyMessages, MaxAccounts: p.Limits.MaxAccounts, APIAccess: p.Limits.APIAccess, MCPAccess: p.Limits.MCPAccess, Webhooks: p.Limits.Webhooks, Copilot: p.Limits.Copilot, Autopilot: p.Limits.Autopilot } }))
     }
+    const { config: cfg2 } = await import('../config.js')
     return c.html(
       renderPage('pricing', {
         Title: 'Pricing — NoTalk',
@@ -132,7 +137,7 @@ export function registerPublicRoutes(app: Hono): void {
         Version: '1.0.0',
         Identity: getIdentity(c),
         Flash: flash ? { Type: flash.Type, Message: flash.Message } : null,
-        Data: { Plans: plans },
+        Data: { Plans: plans, RegistrationEnabled: cfg2.auth.registrationEnabled },
       })
     )
   })
