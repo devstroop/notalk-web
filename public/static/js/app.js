@@ -4,16 +4,16 @@
 document.addEventListener('DOMContentLoaded', function() {
   // ── htmx global events ──
 
-  // Show a global indicator on long requests
-  document.body.addEventListener('htmx:beforeRequest', function() {
+  // Show a global indicator on long requests (htmx 4: colon syntax)
+  document.body.addEventListener('htmx:before:request', function() {
     document.body.classList.add('htmx-loading');
   });
-  document.body.addEventListener('htmx:afterRequest', function() {
+  document.body.addEventListener('htmx:after:request', function() {
     document.body.classList.remove('htmx-loading');
   });
 
-  // Handle htmx errors with a toast
-  document.body.addEventListener('htmx:responseError', function(e) {
+  // Handle htmx errors with a toast (htmx 4: htmx:response:error)
+  document.body.addEventListener('htmx:response:error', function(e) {
     var msg = e.detail.xhr?.responseText || 'Something went wrong';
     showToast('error', msg);
   });
