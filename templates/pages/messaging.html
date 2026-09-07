@@ -6,18 +6,18 @@
        :class="activeChat ? 'hidden md:flex' : 'flex'">
     <div class="flex items-center gap-3 min-w-0">
       <h3 class="text-base text-gray-900 shrink-0">Account</h3>
-      <!-- Custom account picker -->
+       <!-- Custom account picker -->
       <div x-data="{ open: false }" @keydown.escape.window="open = false" class="relative">
         <button @click="open = !open" type="button"
                 class="flex items-center gap-2 pl-3 pr-2 py-1.5 border rounded-xl text-left transition-all max-w-[260px] min-w-[160px]"
-                :class="open ? 'border-brand-400 ring-2 ring-brand-100 bg-white' : (sender && !senderConnected ? 'border-amber-300 bg-amber-50 hover:border-amber-400' : 'border-gray-200 bg-white hover:border-gray-300')">
-          <template x-if="!sender">
+                :class="open ? 'border-brand-400 ring-2 ring-brand-100 bg-white' : ($root.sender && !$root.senderConnected ? 'border-amber-300 bg-amber-50 hover:border-amber-400' : 'border-gray-200 bg-white hover:border-gray-300')">
+          <template x-if="!$root.sender">
             <span class="flex-1 text-sm text-gray-400 truncate">Select account…</span>
           </template>
-          <template x-if="sender">
+          <template x-if="$root.sender">
             <div class="flex items-center gap-2 flex-1 min-w-0">
-              <span class="w-2 h-2 rounded-full shrink-0" :class="senderConnected ? 'bg-green-500' : 'bg-amber-400'"></span>
-              <span class="text-sm font-medium text-gray-900 truncate" x-text="selectedAccountName"></span>
+              <span class="w-2 h-2 rounded-full shrink-0" :class="$root.senderConnected ? 'bg-green-500' : 'bg-amber-400'"></span>
+              <span class="text-sm font-medium text-gray-900 truncate" x-text="$root.selectedAccountName"></span>
             </div>
           </template>
           <svg class="w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform ml-1" :class="open ? 'rotate-180' : ''"
@@ -31,11 +31,11 @@
           {{if .Data.Accounts}}
           {{range .Data.Accounts}}
           <button type="button"
-                  @click="sender = '{{.ID}}'; open = false; onAccountChange()"
+                  @click="$root.sender = '{{.ID}}'; open = false; $root.onAccountChange()"
                   class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left group"
-                  :class="sender === '{{.ID}}' ? 'bg-brand-50' : ''">
+                  :class="$root.sender === '{{.ID}}' ? 'bg-brand-50' : ''">
             <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all"
-                 :class="sender === '{{.ID}}' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600'">
+                 :class="$root.sender === '{{.ID}}' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600'">
               {{if .AccountName}}{{slice .AccountName 0 1}}{{else}}?{{end}}
             </div>
             <div class="flex-1 min-w-0">
