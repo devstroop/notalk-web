@@ -40,6 +40,7 @@ const pageLayout: Record<string, string> = {
   about: 'home',
   terms: 'home',
   privacy: 'home',
+  pricing: 'home',
   dashboard: 'base',
   accounts: 'base',
   'account-detail': 'base',
@@ -888,33 +889,71 @@ function evalPageTemplate(page: string, data: PageData): string {
     content = content.replace(/\{\{\.PlanLimits\}\}/g, '')
     } else if (page === 'pricing') {
       const plans: any[] = Array.isArray((data.Data as any)?.Plans) ? (data.Data as any).Plans : ((data.Data as any)?.plans ?? [])
-      if (content.includes('{{range .Data.Plans}}') && plans.length > 0) {
-        const cards = plans.map((p: any) => {
-          const id = String(p.ID ?? p.id ?? '')
-          const name = esc(String(p.Name ?? p.name ?? ''))
-          const desc = esc(String(p.Description ?? p.description ?? ''))
-          const priceCents = p.PriceCents ?? p.price_cents ?? 0
-          const interval = esc(String(p.Interval ?? p.interval ?? 'month'))
-          const lim: any = p.Limits ?? p.limits ?? p.PlanLimits ?? {}
-          const daily = lim.DailyMessages ?? lim.daily_messages ?? 0
-          const maxAccts = lim.MaxAccounts ?? lim.max_accounts ?? 0
-          const api = !!(lim.APIAccess ?? lim.api_access)
-          const mcp = !!(lim.MCPAccess ?? lim.mcp_access)
-          const wh = !!(lim.Webhooks ?? lim.webhooks)
-          const cop = !!(lim.Copilot ?? lim.copilot)
-          const auto = !!(lim.Autopilot ?? lim.autopilot)
-          const isPro = id === 'pro'
-          const isEnt = id === 'enterprise'
-          const priceHtml = priceCents === 0 && !isEnt ? `<span class="text-4xl font-extrabold text-gray-900">$0</span><span class="text-gray-500 text-sm">/forever</span>` : isEnt ? `<span class="text-4xl font-extrabold text-gray-900">Custom</span><span class="text-gray-500 text-sm">pricing</span>` : `<span class="text-4xl font-extrabold text-gray-900">$${Math.floor(priceCents/100)}</span><span class="text-gray-500 text-sm">/${interval}</span>`
-          const dailyHtml = daily === 0 ? `<strong>Unlimited</strong> messages/day` : `<strong>${daily}</strong> messages/day`
-          const acctsHtml = maxAccts === 0 ? `<strong>Unlimited</strong> accounts` : `Up to <strong>${maxAccts}</strong> account${maxAccts>1?'s':''}`
-          const borderCls = isPro ? 'border-brand-500 ring-2 ring-brand-500' : 'border-gray-200'
-          const badge = isPro ? `<div class="absolute -top-3 left-1/2 -translate-x-1/2"><span class="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold bg-brand-600 text-white">Most Popular</span></div>` : ''
-          const btn = id==='free' ? `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">Get started free</a>` : isPro ? `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors shadow-sm">Start with Professional</a>` : id==='business' ? `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">Start with Business</a>` : `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-lg border border-gray-900 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors">Contact sales</a>`
-          const feat = (icon: string, ok: boolean, label: string, dim: string) => ok ? `<li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700">${label}</span></li>` : `<li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-gray-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg><span class="text-gray-400">${dim}</span></li>`
-          return `<div class="relative bg-white rounded-2xl border ${borderCls} p-6 flex flex-col anim-on-scroll">${badge}<div class="mb-5"><h3 class="text-lg font-bold text-gray-900">${name}</h3><p class="text-sm text-gray-500 mt-1">${desc}</p></div><div class="mb-6">${priceHtml}</div><ul class="space-y-3 mb-8 flex-1"><li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700">${dailyHtml}</span></li><li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700">${acctsHtml}</span></li>${feat('',api,'Full <strong>REST API</strong> access','REST API access')}${feat('',mcp,'<strong>MCP</strong> server access','MCP server access')}${feat('',wh,'Real-time <strong>webhooks</strong>','Webhooks')}${feat('',cop,'<strong>Copilot</strong> assistant','Copilot')}${feat('',auto,'<strong>Autopilot</strong> auto-reply','Autopilot')}${isEnt?`<li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700"><strong>Dedicated</strong> support</span></li>`:''}</ul><div>${btn}</div></div>`
-        }).join('')
-        content = content.replace(/\{\{range \.Data\.Plans\}\}[\s\S]*?\{\{end\}\}/g, cards)
+      // Handle {{range .Data.Plans}} with depth counting to correctly handle nested {{if}}/{{range}}/{{with}} inside the range.
+      const handlePricingRange = (html: string): string => {
+        const startTag = '{{range .Data.Plans}}'
+        let result = '', lastIndex = 0
+        while (true) {
+          const startIdx = html.indexOf(startTag, lastIndex)
+          if (startIdx === -1) { result += html.slice(lastIndex); break }
+          result += html.slice(lastIndex, startIdx)
+          let depth = 1, searchIdx = startIdx + startTag.length, endIdx = -1
+          while (depth > 0 && searchIdx < html.length) {
+            const nextIf = html.indexOf('{{if', searchIdx)
+            const nextRange = html.indexOf('{{range', searchIdx)
+            const nextWith = html.indexOf('{{with', searchIdx)
+            let nextOpen = -1
+            if (nextIf !== -1) nextOpen = nextIf
+            if (nextRange !== -1 && (nextOpen === -1 || nextRange < nextOpen)) nextOpen = nextRange
+            if (nextWith !== -1 && (nextOpen === -1 || nextWith < nextOpen)) nextOpen = nextWith
+            const nextEnd = html.indexOf('{{end}}', searchIdx)
+            if (nextEnd === -1) break
+            if (nextOpen !== -1 && nextOpen < nextEnd) {
+              depth++
+              searchIdx = nextOpen + 5
+            } else {
+              depth--
+              if (depth === 0) { endIdx = nextEnd; break }
+              searchIdx = nextEnd + 7
+            }
+          }
+          if (endIdx === -1) { result += html.slice(startIdx); break }
+          if (plans.length > 0) {
+            const cards = plans.map((p: any) => {
+              const id = String(p.ID ?? p.id ?? '')
+              const name = esc(String(p.Name ?? p.name ?? ''))
+              const desc = esc(String(p.Description ?? p.description ?? ''))
+              const priceCents = p.PriceCents ?? p.price_cents ?? 0
+              const interval = esc(String(p.Interval ?? p.interval ?? 'month'))
+              const lim: any = p.Limits ?? p.limits ?? p.PlanLimits ?? {}
+              const daily = lim.DailyMessages ?? lim.daily_messages ?? 0
+              const maxAccts = lim.MaxAccounts ?? lim.max_accounts ?? 0
+              const api = !!(lim.APIAccess ?? lim.api_access)
+              const mcp = !!(lim.MCPAccess ?? lim.mcp_access)
+              const wh = !!(lim.Webhooks ?? lim.webhooks)
+              const cop = !!(lim.Copilot ?? lim.copilot)
+              const auto = !!(lim.Autopilot ?? lim.autopilot)
+              const isPro = id === 'pro'
+              const isEnt = id === 'enterprise'
+              const priceHtml = priceCents === 0 && !isEnt ? `<span class="text-4xl font-extrabold text-gray-900">$0</span><span class="text-gray-500 text-sm">/forever</span>` : isEnt ? `<span class="text-4xl font-extrabold text-gray-900">Custom</span><span class="text-gray-500 text-sm">pricing</span>` : `<span class="text-4xl font-extrabold text-gray-900">$${Math.floor(priceCents/100)}</span><span class="text-gray-500 text-sm">/${interval}</span>`
+              const dailyHtml = daily === 0 ? `<strong>Unlimited</strong> messages/day` : `<strong>${daily}</strong> messages/day`
+              const acctsHtml = maxAccts === 0 ? `<strong>Unlimited</strong> accounts` : `Up to <strong>${maxAccts}</strong> account${maxAccts>1?'s':''}`
+              const borderCls = isPro ? 'border-brand-500 ring-2 ring-brand-500' : 'border-gray-200'
+              const badge = isPro ? `<div class="absolute -top-3 left-1/2 -translate-x-1/2"><span class="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold bg-brand-600 text-white">Most Popular</span></div>` : ''
+              const btn = id==='free' ? `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">Get started free</a>` : isPro ? `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors shadow-sm">Start with Professional</a>` : id==='business' ? `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">Start with Business</a>` : `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-lg border border-gray-900 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors">Contact sales</a>`
+              const feat = (icon: string, ok: boolean, label: string, dim: string) => ok ? `<li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700">${label}</span></li>` : `<li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-gray-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg><span class="text-gray-400">${dim}</span></li>`
+              return `<div class="relative bg-white rounded-2xl border ${borderCls} p-6 flex flex-col anim-on-scroll">${badge}<div class="mb-5"><h3 class="text-lg font-bold text-gray-900">${name}</h3><p class="text-sm text-gray-500 mt-1">${desc}</p></div><div class="mb-6">${priceHtml}</div><ul class="space-y-3 mb-8 flex-1"><li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700">${dailyHtml}</span></li><li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700">${acctsHtml}</span></li>${feat('',api,'Full <strong>REST API</strong> access','REST API access')}${feat('',mcp,'<strong>MCP</strong> server access','MCP server access')}${feat('',wh,'Real-time <strong>webhooks</strong>','Webhooks')}${feat('',cop,'<strong>Copilot</strong> assistant','Copilot')}${feat('',auto,'<strong>Autopilot</strong> auto-reply','Autopilot')}${isEnt?`<li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700"><strong>Dedicated</strong> support</span></li>`:''}</ul><div>${btn}</div></div>`
+            }).join('')
+            result += cards
+          } else {
+            result += ''
+          }
+          lastIndex = endIdx + '{{end}}'.length
+        }
+        return result
+      }
+      if (content.includes('{{range .Data.Plans}}')) {
+        content = handlePricingRange(content)
       }
       content = content.replace(/\{\{if \.Data\.Plans\}\}[\s\S]*?\{\{else\}\}[\s\S]*?\{\{end\}\}/g, (m)=> plans.length>0 ? m.replace(/\{\{if[^}]+\}\}/g,'').replace(/\{\{else\}\}[\s\S]*?\{\{end\}\}/,'').replace(/\{\{end\}\}/g,'') : m.slice(m.indexOf('{{else}}')+8, m.indexOf('{{end}}')))
       content = content.replace(/\{\{[^}]+\}\}/g, (m)=> m.includes('hx-')||m.includes('x-') ? m : '')
