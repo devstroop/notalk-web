@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <meta name="htmx-config" content='{"implicitInheritance":true,"noSwap":[204,304,"4xx","5xx"]}'>
+  <meta name="htmx-config" content='{"noSwap":[204,304,"4xx","5xx"]}'>
   <script src="https://cdn.jsdelivr.net/npm/htmx.org@4.0.0" integrity="sha384-BvJpBiO8Kh31EqtJe5DRIeWrHWnCGkwytKs9NKFi86Hhw96dEqdEMzZDeK9iEGTc" crossorigin="anonymous"></script>
   <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
   <link rel="stylesheet" href="/static/css/app.css">
@@ -30,7 +30,7 @@
         localStorage.setItem('grpAccounts',  grpAccounts);
         localStorage.setItem('grpAdmin',     grpAdmin);
       "
-      hx-boost="true">
+       hx-boost:inherited="true">
   <!-- Mobile sidebar backdrop -->
   <div x-show="mobileMenu" x-cloak
        @click="mobileMenu = false"
