@@ -4,23 +4,31 @@ import { backend } from '../lib/api.js'
 import { renderPage } from '../lib/render/index.js'
 
 export function registerContactsRoutes(app: Hono): void {
-  // List contacts page — only id is mandatory; phone/email/name all optional
+  // List contacts page — lean, with groups
   app.get('/contacts', async (c) => {
     const identity = getIdentity(c)!
     const token = getToken(c)!
     const flash = getFlash(c)
     const url = new URL(c.req.url)
     const q = url.searchParams.get('q') || ''
+    const group_id = url.searchParams.get('group_id') || ''
 
     let contacts: any[] = []
     let total = 0
     try {
       const query: Record<string, string> = {}
       if (q) query.q = q
+      if (group_id) query.group_id = group_id
       query.limit = '100'
       const { data } = await backend.json('GET', '/api/v1/contacts', token, undefined, query)
       contacts = Array.isArray(data) ? data : (data?.contacts ?? [])
       total = (data?.total ?? contacts.length)
+    } catch {}
+
+    let groups: any[] = []
+    try {
+      const { data } = await backend.json('GET', '/api/v1/contact-groups', token, undefined, { limit: '100' })
+      groups = Array.isArray(data) ? data : (data?.groups ?? data?.Groups ?? [])
     } catch {}
 
     return c.html(
@@ -30,7 +38,7 @@ export function registerContactsRoutes(app: Hono): void {
         Version: '1.0.0',
         Identity: identity,
         Flash: flash ? { Type: flash.Type, Message: flash.Message } : null,
-        Data: { Contacts: contacts, Q: q, Total: total },
+        Data: { Contacts: contacts, Groups: groups, Q: q, GroupFilter: group_id, Total: total },
       })
     )
   })
@@ -54,6 +62,14 @@ export function registerContactsRoutes(app: Hono): void {
     if (notes) payload.notes = notes
     if (tagsRaw) payload.tags = tagsRaw.split(',').map(s => s.trim()).filter(Boolean)
     if (form['starred'] !== undefined) payload.starred = String(form['starred']) === 'on' || String(form['starred']) === 'true'
+    // groups — may be string or array from checkboxes
+    const groupIds = (() => {
+      const v = (form as any)['group_ids']
+      if (!v) return []
+      if (Array.isArray(v)) return v.map((s: any) => String(s).trim()).filter(Boolean)
+      return String(v).split(',').map(s => s.trim()).filter(Boolean)
+    })()
+    if (groupIds.length) payload.group_ids = groupIds
 
     const { status, data } = await backend.json('POST', '/api/v1/contacts', token, payload)
     if (status >= 400) {
@@ -79,6 +95,17 @@ export function registerContactsRoutes(app: Hono): void {
     }
     if (form['starred'] !== undefined) {
       payload.starred = String(form['starred']) === 'on' || String(form['starred']) === 'true'
+    }
+    // groups
+    if ((form as any)['group_ids'] !== undefined) {
+      const v = (form as any)['group_ids']
+      let ids: string[] = []
+      if (Array.isArray(v)) ids = v.map((s: any) => String(s).trim()).filter(Boolean)
+      else if (typeof v === 'string' && v.trim()) ids = v.split(',').map(s => s.trim()).filter(Boolean)
+      payload.group_ids = ids
+    } else if (form['group_ids_empty'] !== undefined) {
+      // alternative: if no checkbox checked, explicit clear
+      payload.group_ids = []
     }
 
     const { status, data } = await backend.json('PATCH', `/api/v1/contacts/${id}`, token, payload)
@@ -122,6 +149,57 @@ export function registerContactsRoutes(app: Hono): void {
     const accepted = data?.accepted ?? 0
     const skipped = data?.skipped ?? 0
     setFlash(c, 'success', `Imported ${accepted} contact(s), skipped ${skipped}.`)
+    return c.redirect('/contacts', 303)
+  })
+
+  // Groups — create
+  app.post('/contact-groups', async (c) => {
+    const token = getToken(c)!
+    const form = await c.req.parseBody()
+    const name = String(form['name'] ?? '').trim()
+    const description = String(form['description'] ?? '').trim()
+    const color = String(form['color'] ?? '').trim() || '#6b7280'
+    if (!name) {
+      setFlash(c, 'error', 'Group name is required.')
+      return c.redirect('/contacts', 303)
+    }
+    const { status, data } = await backend.json('POST', '/api/v1/contact-groups', token, { name, description, color })
+    if (status >= 400) {
+      setFlash(c, 'error', (data as any)?.error || 'Failed to create group')
+      return c.redirect('/contacts', 303)
+    }
+    setFlash(c, 'success', 'Group created.')
+    return c.redirect('/contacts', 303)
+  })
+
+  // Groups — update
+  app.post('/contact-groups/:id/update', async (c) => {
+    const token = getToken(c)!
+    const id = c.req.param('id')
+    const form = await c.req.parseBody()
+    const payload: any = {}
+    if (form['name'] !== undefined) payload.name = String(form['name'] ?? '').trim()
+    if (form['description'] !== undefined) payload.description = String(form['description'] ?? '').trim()
+    if (form['color'] !== undefined) payload.color = String(form['color'] ?? '').trim()
+    const { status, data } = await backend.json('PATCH', `/api/v1/contact-groups/${id}`, token, payload)
+    if (status >= 400) {
+      setFlash(c, 'error', (data as any)?.error || 'Failed to update group')
+      return c.redirect('/contacts', 303)
+    }
+    setFlash(c, 'success', 'Group updated.')
+    return c.redirect('/contacts', 303)
+  })
+
+  // Groups — delete
+  app.post('/contact-groups/:id/delete', async (c) => {
+    const token = getToken(c)!
+    const id = c.req.param('id')
+    const { status, data } = await backend.json('DELETE', `/api/v1/contact-groups/${id}`, token)
+    if (status >= 400) {
+      setFlash(c, 'error', (data as any)?.error || 'Failed to delete group')
+      return c.redirect('/contacts', 303)
+    }
+    setFlash(c, 'success', 'Group deleted.')
     return c.redirect('/contacts', 303)
   })
 }

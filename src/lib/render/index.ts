@@ -764,7 +764,9 @@ function evalPageTemplate(page: string, data: PageData): string {
     }
     } else if (page === 'contacts') {
       const contacts: any[] = Array.isArray((data.Data as any)?.Contacts) ? (data.Data as any).Contacts : ((data.Data as any)?.contacts ?? [])
+      const groups: any[] = Array.isArray((data.Data as any)?.Groups) ? (data.Data as any).Groups : ((data.Data as any)?.groups ?? [])
       const q: string = String((data.Data as any)?.Q ?? '')
+      const groupFilter: string = String((data.Data as any)?.GroupFilter ?? (data.Data as any)?.group_id ?? '')
       // Handle contacts table {{if .Data.Contacts}} ... {{range .Data.Contacts}} ... {{else}} ... {{end}}
       const hasContacts = contacts.length > 0
       const handleContactsIf = (html: string): string => {
@@ -817,11 +819,14 @@ function evalPageTemplate(page: string, data: PageData): string {
               const phoneCell = rawPhone ? esc(rawPhone) : '<span class="text-gray-300">—</span>'
               const email = String(c.Email ?? c.email ?? '')
               const emailCell = email ? esc(email) : '<span class="text-gray-300">—</span>'
+              const cGroups: any[] = Array.isArray(c.Groups) ? c.Groups : (Array.isArray(c.groups) ? c.groups : [])
+              const groupsCell = cGroups.length ? `<div class="flex flex-wrap gap-1">${cGroups.map((g:any)=>`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white" style="background:${escAttr(String(g.Color||g.color||'#6b7280'))}">${esc(String(g.Name||g.name||''))}</span>`).join('')}</div>` : '<span class="text-gray-300">—</span>'
               const tagsRaw: any = c.Tags ?? c.tags ?? []
               const tagsArr: string[] = Array.isArray(tagsRaw) ? tagsRaw : (typeof tagsRaw === 'string' ? (()=>{try{const p=JSON.parse(tagsRaw); return Array.isArray(p)?p:[]}catch{return []}})() : [])
               const tagsCell = tagsArr.length ? `<div class="flex flex-wrap gap-1.5">${tagsArr.map((t:string)=>`<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">${esc(t)}</span>`).join('')}</div>` : '<span class="text-gray-300">—</span>'
               const createdAt = String(c.CreatedAt ?? c.created_at ?? '')
-              return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3"><div class="flex items-center gap-2">${starHtml}<span class="font-medium text-gray-900">${nameCell}</span></div></td><td class="px-4 py-3 text-gray-700">${companyCell}</td><td class="px-4 py-3 font-mono text-gray-700">${phoneCell}</td><td class="px-4 py-3 text-gray-500">${emailCell}</td><td class="px-4 py-3">${tagsCell}</td><td class="px-4 py-3 text-gray-500 whitespace-nowrap">${esc(timeAgo(createdAt))}</td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-1"><button @click="editContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}', phone: '${escAttr(String(c.Phone ?? c.phone ?? ''))}', email: '${escAttr(String(email))}', company: '${escAttr(String(c.Company ?? c.company ?? ''))}', notes: '${escAttr(String(c.Notes ?? c.notes ?? ''))}', tags: '${escAttr(tagsArr.join(','))}', starred: ${starred ? 'true' : 'false'} }" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><button @click="deleteContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}' }" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></div></td></tr>`
+              const groupIds = cGroups.map((g:any)=> String(g.ID||g.id||'')).filter(Boolean)
+              return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3"><div class="flex items-center gap-2">${starHtml}<span class="font-medium text-gray-900">${nameCell}</span></div></td><td class="px-4 py-3 text-gray-700">${companyCell}</td><td class="px-4 py-3 font-mono text-gray-700">${phoneCell}</td><td class="px-4 py-3 text-gray-500">${emailCell}</td><td class="px-4 py-3">${groupsCell}</td><td class="px-4 py-3">${tagsCell}</td><td class="px-4 py-3 text-gray-500 whitespace-nowrap">${esc(timeAgo(createdAt))}</td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-1"><button @click="editContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}', phone: '${escAttr(String(c.Phone ?? c.phone ?? ''))}', email: '${escAttr(String(email))}', company: '${escAttr(String(c.Company ?? c.company ?? ''))}', notes: '${escAttr(String(c.Notes ?? c.notes ?? ''))}', tags: '${escAttr(tagsArr.join(','))}', starred: ${starred ? 'true' : 'false'}, group_ids: [${groupIds.map((gid:string)=>`'${escAttr(gid)}'`).join(',')}] }" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><button @click="deleteContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}' }" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></div></td></tr>`
             }).join('')
             let tableHtml = ifBlock
             tableHtml = tableHtml.replace(/<tbody[^>]*>[\s\S]*?<\/tbody>/, () => `<tbody class="divide-y divide-gray-100">${rowsHtml}</tbody>`)
@@ -840,6 +845,71 @@ function evalPageTemplate(page: string, data: PageData): string {
         const fallback = contacts.map((c: any) => `<tr><td>${esc(String(c.Name ?? ''))}</td><td>${esc(String(c.Phone ?? ''))}</td></tr>`).join('')
         content = content.replace(/\{\{range \.Data\.Contacts\}\}[\s\S]*?\{\{end\}\}/g, fallback)
       }
+      // Groups: handle {{if .Data.Groups}} ... {{else}} ... {{end}}
+      if (content.includes('{{if .Data.Groups}}')) {
+        const hasGroups = groups.length > 0
+        const handleGroupsIf = (html: string): string => {
+          const startTag = '{{if .Data.Groups}}'
+          const elseTag = '{{else}}'
+          const endTag = '{{end}}'
+          let res = '', li = 0
+          while (true) {
+            const si = html.indexOf(startTag, li)
+            if (si === -1) { res += html.slice(li); break }
+            res += html.slice(li, si)
+            let depth=1, sIdx=si+startTag.length, eIdx=-1, elIdx=-1
+            while (depth>0 && sIdx < html.length) {
+              const ni = html.indexOf('{{if', sIdx)
+              const nr = html.indexOf('{{range', sIdx)
+              let no = -1
+              if (ni!==-1) no=ni
+              if (nr!==-1 && (no===-1 || nr<no)) no=nr
+              const ne = html.indexOf(elseTag, sIdx)
+              const nd = html.indexOf(endTag, sIdx)
+              const cands:any[]=[]
+              if (no!==-1) cands.push({idx:no,type:'if'})
+              if (ne!==-1) cands.push({idx:ne,type:'else'})
+              if (nd!==-1) cands.push({idx:nd,type:'end'})
+              if (!cands.length) break
+              cands.sort((a,b)=>a.idx-b.idx)
+              const n=cands[0]
+              if (n.type==='if'){depth++; sIdx=n.idx+4}
+              else if (n.type==='else' && depth===1 && elIdx===-1){elIdx=n.idx; sIdx=n.idx+elseTag.length}
+              else if (n.type==='end'){depth--; if(depth===0){eIdx=n.idx; break} sIdx=n.idx+endTag.length}
+              else sIdx=n.idx+4
+            }
+            if (eIdx===-1){res+=html.slice(si); break}
+            const ib = elIdx!==-1 ? html.slice(si+startTag.length, elIdx) : html.slice(si+startTag.length, eIdx)
+            const eb = elIdx!==-1 ? html.slice(elIdx+elseTag.length, eIdx) : ''
+            res += hasGroups ? ib : eb
+            li = eIdx+endTag.length
+          }
+          return res
+        }
+        content = handleGroupsIf(content)
+      }
+      // Groups range — generate filter pills, management, checkboxes
+      if (content.includes('{{range .Data.Groups}}') && groups.length>0) {
+        // For each range, generate by replacing inner placeholders per group
+        // We handle generically: expand each range by iterating groups and interpolating .ID/.Name/.Color/.Description/.ContactCount
+        content = content.replace(/\{\{range \.Data\.Groups\}\}([\s\S]*?)\{\{end\}\}/g, (_m, inner) => {
+          return groups.map((g:any)=>{
+            let seg = inner
+            seg = seg.replace(/\{\{\.ID\}\}/g, escAttr(String(g.ID||g.id||'')))
+            seg = seg.replace(/\{\{\.Name\}\}/g, esc(String(g.Name||g.name||'')))
+            seg = seg.replace(/\{\{\.Color\}\}/g, escAttr(String(g.Color||g.color||'#6b7280')))
+            seg = seg.replace(/\{\{\.Description\}\}/g, esc(String(g.Description||g.description||'')))
+            seg = seg.replace(/\{\{\.ContactCount\}\}/g, String(g.ContactCount||g.contact_count||0))
+            // Handle active filter for pills
+            seg = seg.replace(/\{\{if eq \$\.Data\.GroupFilter \.ID\}\}([^\{]*?)\{\{else\}\}([^\{]*?)\{\{end\}\}/g, (_:string,a:string,b:string)=> (groupFilter && groupFilter===String(g.ID||g.id||'')) ? a : b)
+            // Fallback generic if/else
+            seg = seg.replace(/\{\{[^}]+\}\}/g, (m:string)=> m.includes('hx-')||m.includes('x-') ? m : '')
+            return seg
+          }).join('')
+        })
+      } else if (content.includes('{{range .Data.Groups}}')) {
+        content = content.replace(/\{\{range \.Data\.Groups\}\}[\s\S]*?\{\{end\}\}/g, '')
+      }
       // Search value
       if (q) {
         content = content.replace(/value="\{\{\.Data\.Q\}\}"/g, `value="${escAttr(q)}"`)
@@ -849,6 +919,9 @@ function evalPageTemplate(page: string, data: PageData): string {
       // Cleanup remaining go tags
       content = content.replace(/\{\{\.Data\.Q\}\}/g, esc(q))
       content = content.replace(/\{\{\.Data\.Total\}\}/g, String((data.Data as any)?.Total ?? contacts.length))
+      content = content.replace(/\{\{\.Data\.GroupFilter\}\}/g, escAttr(groupFilter))
+      // Remove any leftover Data.Groups conditionals not handled
+      content = content.replace(/\{\{if \.Data\.Groups\}\}/g, '').replace(/\{\{end\}\}/g, '')
     } else if (page === 'billing' || page === 'billing-plans' || page === 'billing-subscriptions' || page === 'billing-usage' || page === 'admin-config' || page === 'subscription') {
     // Billing pages: handle Plans, Subscriptions, Usage, and divCents helper
     const plans: any[] = Array.isArray((data.Data as any)?.Plans) ? (data.Data as any).Plans : ((data.Data as any)?.plans ?? [])

@@ -1,11 +1,16 @@
 {{define "content"}}
-<div x-data="{ showCreate: false, editContact: null, deleteContact: null }" class="space-y-6">
+<div x-data="{ showCreate: false, editContact: null, deleteContact: null, showCreateGroup: false, editGroup: null, deleteGroup: null }" class="space-y-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
       <h3 class="text-lg font-semibold text-gray-900">Contacts</h3>
       <p class="text-sm text-gray-500">Lean address book — only ID is required (hidden). {{if .Data.Total}}<span class="font-medium text-gray-700">{{.Data.Total}} total</span>{{end}}</p>
     </div>
     <div class="flex items-center gap-2">
+      <button @click="showCreateGroup = true"
+        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>
+        New Group
+      </button>
       <button @click="showCreate = true"
         class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-xl hover:bg-brand-600 shadow-sm hover:shadow-md transition-all">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
@@ -14,14 +19,48 @@
     </div>
   </div>
 
+  <!-- Groups bar -->
+  {{if .Data.Groups}}
+  <div class="bg-white rounded-xl border border-gray-200 p-3">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-2">Groups:</span>
+      <a href="/contacts" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border {{if not .Data.GroupFilter}}bg-gray-900 text-white border-gray-900{{else}}bg-white text-gray-600 border-gray-200 hover:bg-gray-50{{end}}">All</a>
+      {{range .Data.Groups}}
+      <a href="/contacts?group_id={{.ID}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border {{if eq $.Data.GroupFilter .ID}}bg-brand-500 text-white border-brand-500{{else}}bg-white border-gray-200 hover:bg-gray-50{{end}}">
+        <span class="w-2 h-2 rounded-full" style="background: {{.Color}}"></span>
+        {{.Name}} <span class="opacity-60">({{.ContactCount}})</span>
+      </a>
+      {{end}}
+    </div>
+    <!-- Groups management -->
+    <div class="mt-3 flex flex-wrap gap-2">
+      {{range .Data.Groups}}
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+        <span class="w-3 h-3 rounded-full" style="background: {{.Color}}"></span>
+        <span class="text-xs font-medium text-gray-700">{{.Name}}</span>
+        {{if .Description}}<span class="text-xs text-gray-400">· {{.Description}}</span>{{end}}
+        <button @click="editGroup = { id: '{{.ID}}', name: '{{.Name}}', description: '{{.Description}}', color: '{{.Color}}' }" class="ml-1 p-1 text-gray-400 hover:text-blue-600"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+        <button @click="deleteGroup = { id: '{{.ID}}', name: '{{.Name}}' }" class="p-1 text-gray-400 hover:text-red-600"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg></button>
+      </div>
+      {{end}}
+    </div>
+  </div>
+  {{else}}
+  <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
+    <p class="text-sm text-gray-500">No groups yet. Create a group to organize contacts.</p>
+    <button @click="showCreateGroup = true" class="mt-2 text-sm font-medium text-brand-600 hover:text-brand-700">Create first group →</button>
+  </div>
+  {{end}}
+
   <!-- Search -->
   <form method="GET" action="/contacts" class="flex flex-col sm:flex-row gap-3 bg-white rounded-xl border border-gray-200 p-3">
     <div class="relative flex-1">
       <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       <input type="text" name="q" value="{{.Data.Q}}" placeholder="Search name, phone, email, company, tags…" class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
     </div>
+    {{if .Data.GroupFilter}}<input type="hidden" name="group_id" value="{{.Data.GroupFilter}}">{{end}}
     <button type="submit" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Search</button>
-    {{if .Data.Q}}<a href="/contacts" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 self-center">Clear</a>{{end}}
+    {{if .Data.Q}}<a href="/contacts{{if .Data.GroupFilter}}?group_id={{.Data.GroupFilter}}{{end}}" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 self-center">Clear</a>{{end}}
   </form>
 
   <!-- Import CSV -->
@@ -45,6 +84,7 @@
           <th class="text-left px-4 py-3 font-medium text-gray-600">Company</th>
           <th class="text-left px-4 py-3 font-medium text-gray-600">Phone <span class="text-gray-400 font-normal">(optional)</span></th>
           <th class="text-left px-4 py-3 font-medium text-gray-600">Email <span class="text-gray-400 font-normal">(optional)</span></th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Groups</th>
           <th class="text-left px-4 py-3 font-medium text-gray-600">Tags</th>
           <th class="text-left px-4 py-3 font-medium text-gray-600">Created</th>
           <th class="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
@@ -63,6 +103,13 @@
           <td class="px-4 py-3 font-mono text-gray-700">{{if .Phone}}{{.Phone}}{{else}}<span class="text-gray-300">—</span>{{end}}</td>
           <td class="px-4 py-3 text-gray-500">{{if .Email}}{{.Email}}{{else}}<span class="text-gray-300">—</span>{{end}}</td>
           <td class="px-4 py-3">
+            {{if .Groups}}
+            <div class="flex flex-wrap gap-1">
+              {{range .Groups}}<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white" style="background: {{.Color}}">{{.Name}}</span>{{end}}
+            </div>
+            {{else}}<span class="text-gray-300">—</span>{{end}}
+          </td>
+          <td class="px-4 py-3">
             {{if .Tags}}
             <div class="flex flex-wrap gap-1.5">
               {{range .Tags}}<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">{{.}}</span>{{end}}
@@ -72,7 +119,7 @@
           <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{timeAgo .CreatedAt}}</td>
           <td class="px-4 py-3 text-right">
             <div class="flex items-center justify-end gap-1">
-              <button @click="editContact = { id: '{{.ID}}', name: '{{.Name}}', phone: '{{.Phone}}', email: '{{.Email}}', company: '{{.Company}}', notes: '{{.Notes}}', tags: '{{range $i, $t := .Tags}}{{if $i}},{{end}}{{$t}}{{end}}', starred: {{if .Starred}}true{{else}}false{{end}} }"
+              <button @click="editContact = { id: '{{.ID}}', name: '{{.Name}}', phone: '{{.Phone}}', email: '{{.Email}}', company: '{{.Company}}', notes: '{{.Notes}}', tags: '{{range $i, $t := .Tags}}{{if $i}},{{end}}{{$t}}{{end}}', starred: {{if .Starred}}true{{else}}false{{end}}, group_ids: [{{range $i, $g := .Groups}}{{if $i}},{{end}}'{{$g.ID}}'{{end}}] }"
                 class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
               </button>
@@ -99,12 +146,12 @@
     {{end}}
   </div>
 
-  <!-- Create Contact Modal — lean -->
+  <!-- Create Contact Modal — lean with groups -->
   <div x-show="showCreate" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="showCreate = false">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" @click.stop>
       <div class="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 rounded-t-xl">
         <h3 class="text-lg font-semibold text-gray-900">New Contact</h3>
-        <p class="text-xs text-gray-400 mt-1">Lean standard — only ID is required (hidden). Phone/email optional. For WhatsApp, email, or future social channels.</p>
+        <p class="text-xs text-gray-400 mt-1">Lean — only ID is required (hidden). Phone/email optional.</p>
       </div>
       <form method="POST" action="/contacts" class="px-6 py-4 space-y-4">
         <div><label class="block text-xs font-medium text-gray-600 mb-1">Name <span class="text-gray-400 font-normal">(optional)</span></label><input type="text" name="name" maxlength="100" placeholder="Jane Doe" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
@@ -113,6 +160,20 @@
           <div><label class="block text-xs font-medium text-gray-600 mb-1">Email <span class="text-gray-400">(optional)</span></label><input type="email" name="email" placeholder="jane@example.com" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
         </div>
         <div><label class="block text-xs font-medium text-gray-600 mb-1">Company <span class="text-gray-400">(optional)</span></label><input type="text" name="company" placeholder="Acme Inc." class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+        {{if .Data.Groups}}
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Groups</label>
+          <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto border border-gray-200 rounded-lg p-2">
+            {{range .Data.Groups}}
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" name="group_ids" value="{{.ID}}" class="rounded border-gray-300">
+              <span class="w-2.5 h-2.5 rounded-full" style="background: {{.Color}}"></span>
+              <span class="text-gray-700 truncate">{{.Name}}</span>
+            </label>
+            {{end}}
+          </div>
+        </div>
+        {{end}}
         <div><label class="block text-xs font-medium text-gray-600 mb-1">Tags <span class="text-gray-400">(comma-separated, optional)</span></label><input type="text" name="tags" placeholder="vip, customer" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
         <div class="flex items-center gap-2"><input type="checkbox" name="starred" id="create-starred" class="rounded border-gray-300"><label for="create-starred" class="text-sm text-gray-700">Starred</label></div>
         <div><label class="block text-xs font-medium text-gray-600 mb-1">Notes <span class="text-gray-400">(optional)</span></label><textarea name="notes" rows="2" placeholder="VIP, prefers email…" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></textarea></div>
@@ -124,7 +185,7 @@
     </div>
   </div>
 
-  <!-- Edit Contact Modal — lean -->
+  <!-- Edit Contact Modal — lean with groups -->
   <template x-if="editContact">
   <div x-show="editContact" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="editContact = null">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" @click.stop>
@@ -139,6 +200,25 @@
           <div><label class="block text-xs font-medium text-gray-600 mb-1">Email</label><input type="email" name="email" x-model="editContact.email" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
         </div>
         <div><label class="block text-xs font-medium text-gray-600 mb-1">Company</label><input type="text" name="company" x-model="editContact.company" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+        <!-- Groups checkboxes -->
+        {{if .Data.Groups}}
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Groups</label>
+          <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto border border-gray-200 rounded-lg p-2">
+            {{range .Data.Groups}}
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" name="group_ids" value="{{.ID}}" :checked="editContact.group_ids && editContact.group_ids.includes('{{.ID}}')" @change="if($event.target.checked){ if(!editContact.group_ids) editContact.group_ids=[]; if(!editContact.group_ids.includes('{{.ID}}')) editContact.group_ids.push('{{.ID}}') } else { editContact.group_ids = (editContact.group_ids||[]).filter(id=>id!=='{{.ID}}') }">
+              <span class="w-2.5 h-2.5 rounded-full" style="background: {{.Color}}"></span>
+              <span class="text-gray-700 truncate">{{.Name}}</span>
+            </label>
+            {{end}}
+          </div>
+          <!-- Hidden inputs for submit: Alpine will sync to hidden fields -->
+          <template x-for="gid in (editContact.group_ids||[])" :key="gid">
+            <input type="hidden" name="group_ids" :value="gid">
+          </template>
+        </div>
+        {{end}}
         <div><label class="block text-xs font-medium text-gray-600 mb-1">Tags</label><input type="text" name="tags" x-model="editContact.tags" placeholder="vip, customer" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
         <div class="flex items-center gap-2"><input type="checkbox" name="starred" :checked="editContact.starred" @change="editContact.starred = $event.target.checked" class="rounded border-gray-300"><label class="text-sm text-gray-700">Starred</label></div>
         <div><label class="block text-xs font-medium text-gray-600 mb-1">Notes</label><textarea name="notes" rows="2" x-model="editContact.notes" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></textarea></div>
@@ -151,13 +231,59 @@
   </div>
   </template>
 
-  <!-- Delete Confirm -->
+  <!-- Delete Contact Confirm -->
   <div x-show="deleteContact" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="deleteContact = null">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" @click.stop>
       <h3 class="text-lg font-semibold text-gray-900">Delete contact?</h3>
       <p class="text-sm text-gray-500">Delete <strong x-text="deleteContact?.name || deleteContact?.id"></strong>. This cannot be undone.</p>
       <form method="POST" :action="'/contacts/' + deleteContact?.id + '/delete'" class="flex justify-end gap-3 pt-2">
         <button type="button" @click="deleteContact = null" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Delete</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Create Group Modal -->
+  <div x-show="showCreateGroup" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="showCreateGroup = false">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" @click.stop>
+      <h3 class="text-lg font-semibold text-gray-900">New Group</h3>
+      <form method="POST" action="/contact-groups" class="space-y-4">
+        <div><label class="block text-xs font-medium text-gray-600 mb-1">Name *</label><input type="text" name="name" required maxlength="50" placeholder="VIP, Leads…" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs font-medium text-gray-600 mb-1">Description</label><input type="text" name="description" placeholder="High value customers" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs font-medium text-gray-600 mb-1">Color</label><input type="color" name="color" value="#6b7280" class="w-16 h-8 rounded border border-gray-300 p-1"></div>
+        <div class="flex justify-end gap-3">
+          <button type="button" @click="showCreateGroup = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Group Modal -->
+  <template x-if="editGroup">
+  <div x-show="editGroup" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="editGroup = null">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" @click.stop>
+      <h3 class="text-lg font-semibold text-gray-900">Edit Group</h3>
+      <form method="POST" :action="'/contact-groups/' + editGroup.id + '/update'" class="space-y-4">
+        <div><label class="block text-xs font-medium text-gray-600 mb-1">Name</label><input type="text" name="name" x-model="editGroup.name" required maxlength="50" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs font-medium text-gray-600 mb-1">Description</label><input type="text" name="description" x-model="editGroup.description" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs font-medium text-gray-600 mb-1">Color</label><input type="color" name="color" x-model="editGroup.color" class="w-full h-8 rounded border border-gray-300 p-1"></div>
+        <div class="flex justify-end gap-3">
+          <button type="button" @click="editGroup = null" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  </template>
+
+  <!-- Delete Group Confirm -->
+  <div x-show="deleteGroup" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="deleteGroup = null">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" @click.stop>
+      <h3 class="text-lg font-semibold text-gray-900">Delete group?</h3>
+      <p class="text-sm text-gray-500">Delete group <strong x-text="deleteGroup?.name"></strong>? Contacts will remain, only the group label is removed.</p>
+      <form method="POST" :action="'/contact-groups/' + deleteGroup?.id + '/delete'" class="flex justify-end gap-3 pt-2">
+        <button type="button" @click="deleteGroup = null" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
         <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Delete</button>
       </form>
     </div>
