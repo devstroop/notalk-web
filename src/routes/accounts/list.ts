@@ -4,29 +4,11 @@ import { backend } from '../../lib/api.js'
 import { renderPage } from '../../lib/render/index.js'
 
 export function registerAccountsListRoutes(app: Hono): void {
+  // Deprecated alias — redirect to agnostic /channels (kept for backward compat, 302)
   app.get('/accounts', async (c) => {
-    const identity = getIdentity(c)!
-    const token = getToken(c)!
-    const flash = getFlash(c)
-    const { data } = await backend.json('GET', '/api/v1/accounts', token)
-    const accounts: any[] = Array.isArray(data) ? data : (data?.accounts ?? [])
-    const rows = accounts.map((a: any) => ({
-      ID: a.id,
-      AccountName: a.account_name ?? a.accountName ?? '',
-      PhoneNumber: a.phone_number ?? a.phoneNumber ?? '',
-      Connected: a.status?.connected ?? a.connected ?? a.authorized ?? a.Authorized ?? false,
-      CreatedAt: a.created_at ?? a.createdAt ?? '',
-    }))
-    return c.html(
-      renderPage('accounts', {
-        Title: 'Accounts — NoTalk',
-        Page: 'accounts',
-        Version: '1.0.0',
-        Identity: identity,
-        Flash: flash ? { Type: flash.Type, Message: flash.Message } : null,
-        Data: { Accounts: rows },
-      })
-    )
+    const url = new URL(c.req.url)
+    const qs = url.search
+    return c.redirect(`/channels${qs}`, 302)
   })
 
   app.post('/accounts', async (c) => {
