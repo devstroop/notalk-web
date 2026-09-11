@@ -10,6 +10,7 @@ import { registerAiSettingsRoutes } from './routes/settings/ai.js'
 import { registerAssistantRoutes } from './routes/assistant.js'
 import { registerAdminRoutes } from './routes/admin.js'
 import { registerBillingRoutes } from './routes/billing.js'
+import { registerContactsRoutes } from './routes/contacts.js'
 
 export interface Env {
   NOTALK_BACKEND_URL?: string
@@ -40,6 +41,7 @@ const app = (() => {
   registerAiSettingsRoutes(a)
   registerAdminRoutes(a)
   registerBillingRoutes(a)
+  registerContactsRoutes(a)
   a.all('*', async (c) => {
     const { getFlash, getIdentity } = await import('./middleware/auth.js')
     const { renderPage } = await import('./lib/render/index.js')

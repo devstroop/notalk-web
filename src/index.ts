@@ -10,6 +10,7 @@ import { registerAiSettingsRoutes } from './routes/settings/ai.js'
 import { registerAssistantRoutes } from './routes/assistant.js'
 import { registerAdminRoutes } from './routes/admin.js'
 import { registerBillingRoutes } from './routes/billing.js'
+import { registerContactsRoutes } from './routes/contacts.js'
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { config } from './config.js'
@@ -34,6 +35,7 @@ registerAssistantRoutes(app)
 registerAiSettingsRoutes(app)
 registerAdminRoutes(app)
 registerBillingRoutes(app)
+registerContactsRoutes(app)
 
 // 404 — keep last, after all other routes
 app.all('*', (c) => {

@@ -34,6 +34,13 @@
       <span x-show="!sidebarOpen" class="sidebar-tooltip">Dashboard</span>
     </a>
 
+    <!-- Contacts — address book -->
+    <a href="/contacts" title="Contacts" class="{{$item}} {{if eq .Page "contacts"}}{{$active}}{{end}}">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-2"/><path d="M22 8a6 6 0 0 0-6 6"/><path d="M16 3a6 6 0 0 1 6 6"/></svg>
+      <span x-show="sidebarOpen" x-transition class="flex-1">Contacts</span>
+      <span x-show="!sidebarOpen" class="sidebar-tooltip">Contacts</span>
+    </a>
+
     <!-- Accounts group -->
     <div x-data="{open: grpAccounts}" class="w-full {{$item}} {{if or (eq .Page "accounts") (eq .Page "account-detail")}}{{$active}}{{end}} !gap-0">
       <a href="/accounts" title="Accounts" class="flex items-center gap-2.5 flex-1 min-w-0 text-inherit">

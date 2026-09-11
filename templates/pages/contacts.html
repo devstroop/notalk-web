@@ -1,0 +1,199 @@
+{{define "content"}}
+<div x-data="{ showCreate: false, editContact: null, deleteContact: null }" class="space-y-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h3 class="text-lg font-semibold text-gray-900">Contacts</h3>
+      <p class="text-sm text-gray-500">Your address book — persisted contacts for quick messaging. {{if .Data.Total}}<span class="font-medium text-gray-700">{{.Data.Total}} total</span>{{end}}</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button @click="showCreate = true"
+        class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-xl hover:bg-brand-600 shadow-sm hover:shadow-md transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
+        New Contact
+      </button>
+    </div>
+  </div>
+
+  <!-- Search & Filters -->
+  <form method="GET" action="/contacts" class="flex flex-col sm:flex-row gap-3 bg-white rounded-xl border border-gray-200 p-3">
+    <div class="relative flex-1">
+      <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" name="q" value="{{.Data.Q}}" placeholder="Search name, phone, email…" class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+    </div>
+    <select name="account_id" class="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-600 sm:w-56">
+      <option value="">All accounts</option>
+      {{range .Data.Accounts}}
+      <option value="{{.ID}}">{{.AccountName}} ({{.PhoneNumber}})</option>
+      {{end}}
+    </select>
+    <button type="submit" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Filter</button>
+    {{if .Data.Q}}<a href="/contacts" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 self-center">Clear</a>{{end}}
+  </form>
+
+  <!-- Import CSV -->
+  <div class="bg-white rounded-xl border border-gray-200 p-4">
+    <h4 class="text-sm font-medium text-gray-900 mb-2">Bulk import</h4>
+    <form method="POST" action="/contacts/import" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+      <input type="file" name="file" accept=".csv" required class="block w-full sm:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand-50 file:text-brand-800 hover:file:bg-brand-100">
+      <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-black transition-colors">Import CSV</button>
+      <span class="text-xs text-gray-400">CSV: phone,name (header phone / phone_number / msisdn auto-detected, max 5k rows)</span>
+    </form>
+  </div>
+
+  <!-- Contacts table -->
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    {{if .Data.Contacts}}
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Phone</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Email</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Account</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Notes</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Created</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {{range .Data.Contacts}}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-4 py-3 font-medium text-gray-900">{{.Name}}</td>
+          <td class="px-4 py-3 font-mono text-gray-700">{{.Phone}}</td>
+          <td class="px-4 py-3 text-gray-500">{{if .Email}}{{.Email}}{{else}}<span class="text-gray-300">—</span>{{end}}</td>
+          <td class="px-4 py-3 text-gray-500">{{if .AccountID}}<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600 font-mono">{{truncate .AccountID 8}}</span>{{else}}<span class="text-gray-300">—</span>{{end}}</td>
+          <td class="px-4 py-3 text-gray-500 max-w-xs truncate">{{if .Notes}}{{.Notes}}{{else}}<span class="text-gray-300">—</span>{{end}}</td>
+          <td class="px-4 py-3 text-gray-500">{{timeAgo .CreatedAt}}</td>
+          <td class="px-4 py-3 text-right">
+            <div class="flex items-center justify-end gap-1">
+              <button @click="editContact = { id: '{{.ID}}', name: '{{.Name}}', phone: '{{.Phone}}', email: '{{.Email}}', notes: '{{.Notes}}', accountID: '{{if .AccountID}}{{.AccountID}}{{end}}' }"
+                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+              </button>
+              <button @click="deleteContact = { id: '{{.ID}}', name: '{{.Name}}' }"
+                class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{else}}
+    <div class="p-12 text-center">
+      <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 8a6 6 0 0 1-6 6"/><path d="M16 3a6 6 0 0 1 0 12"/></svg>
+      </div>
+      <p class="text-sm font-medium text-gray-700">No contacts yet</p>
+      <p class="text-sm text-gray-500 mt-1">Add contacts manually or import a CSV.</p>
+      <button @click="showCreate = true" class="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-xl hover:bg-brand-600">Add your first contact</button>
+    </div>
+    {{end}}
+  </div>
+
+  <!-- Create Contact Modal -->
+  <div x-show="showCreate" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0" @click.self="showCreate = false">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4" @click.stop>
+      <h3 class="text-lg font-semibold text-gray-900">New Contact</h3>
+      <form method="POST" action="/contacts" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+          <input type="text" name="name" required maxlength="100" placeholder="Jane Doe"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Phone * <span class="text-gray-400 font-normal">(7-15 digits, any format)</span></label>
+          <input type="tel" name="phone" required placeholder="+919876543210 or 9876543210"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-gray-400">(optional)</span></label>
+          <input type="email" name="email" placeholder="jane@example.com"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Linked Account <span class="text-gray-400">(optional)</span></label>
+          <select name="account_id" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+            <option value="">— No account —</option>
+            {{range .Data.Accounts}}
+            <option value="{{.ID}}">{{.AccountName}} ({{.PhoneNumber}})</option>
+            {{end}}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Notes <span class="text-gray-400">(optional)</span></label>
+          <textarea name="notes" rows="2" placeholder="VIP customer, speaks Hindi…"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600"></textarea>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" @click="showCreate = false"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
+          <button type="submit"
+            class="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 transition-colors">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Contact Modal -->
+  <template x-if="editContact">
+  <div x-show="editContact" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0" @click.self="editContact = null">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4" @click.stop>
+      <h3 class="text-lg font-semibold text-gray-900">Edit Contact</h3>
+      <form method="POST" :action="'/contacts/' + editContact.id + '/update'" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+          <input type="text" name="name" required maxlength="100" x-model="editContact.name"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+          <input type="tel" name="phone" required x-model="editContact.phone"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input type="email" name="email" x-model="editContact.email"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Linked Account</label>
+          <select name="account_id" x-model="editContact.accountID" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+            <option value="">— No account —</option>
+            {{range .Data.Accounts}}
+            <option value="{{.ID}}">{{.AccountName}} ({{.PhoneNumber}})</option>
+            {{end}}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <textarea name="notes" rows="2" x-model="editContact.notes"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600"></textarea>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" @click="editContact = null"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
+          <button type="submit"
+            class="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 transition-colors">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  </template>
+
+  <!-- Delete Confirm -->
+  <div x-show="deleteContact" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0" @click.self="deleteContact = null">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" @click.stop>
+      <h3 class="text-lg font-semibold text-gray-900">Delete contact?</h3>
+      <p class="text-sm text-gray-500">Delete <strong x-text="deleteContact?.name"></strong> (<span x-text="deleteContact?.name"></span>). This cannot be undone.</p>
+      <form method="POST" :action="'/contacts/' + deleteContact?.id + '/delete'" class="flex justify-end gap-3 pt-2">
+        <button type="button" @click="deleteContact = null"
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+        <button type="submit"
+          class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+{{end}}

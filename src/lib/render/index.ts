@@ -58,6 +58,7 @@ const pageLayout: Record<string, string> = {
   'billing-usage': 'base',
   'admin-config': 'base',
   subscription: 'base',
+  contacts: 'base',
   login: 'auth',
   register: 'auth',
   'forgot-password': 'auth',
@@ -761,6 +762,93 @@ function evalPageTemplate(page: string, data: PageData): string {
     if (content.includes('{{range .Data.Accounts}}')) {
       content = content.replace(/\{\{range \.Data\.Accounts\}\}[\s\S]*?\{\{end\}\}/g, accountsOptions)
     }
+    } else if (page === 'contacts') {
+      const contacts: any[] = Array.isArray((data.Data as any)?.Contacts) ? (data.Data as any).Contacts : ((data.Data as any)?.contacts ?? [])
+      const accounts = normalizeAccounts((data.Data as any)?.Accounts ?? (data.Data as any)?.accounts ?? [])
+      const q: string = String((data.Data as any)?.Q ?? '')
+      // Accounts dropdown options for modals
+      const accountsOptions = accounts.map((a: any) => `<option value="${escAttr(String(a.ID))}">${esc(a.AccountName)} (${esc(a.PhoneNumber)})</option>`).join('')
+      // Handle contacts table {{if .Data.Contacts}} ... {{range .Data.Contacts}} ... {{else}} ... {{end}}
+      const hasContacts = contacts.length > 0
+      const handleContactsIf = (html: string): string => {
+        const startTag = '{{if .Data.Contacts}}'
+        const elseTag = '{{else}}'
+        const endTag = '{{end}}'
+        let result = ''
+        let lastIndex = 0
+        while (true) {
+          const startIdx = html.indexOf(startTag, lastIndex)
+          if (startIdx === -1) { result += html.slice(lastIndex); break }
+          result += html.slice(lastIndex, startIdx)
+          let depth = 1, searchIdx = startIdx + startTag.length, elseIdx = -1, endIdx = -1
+          while (depth > 0 && searchIdx < html.length) {
+            const nextIf = html.indexOf('{{if', searchIdx)
+            const nextRange = html.indexOf('{{range', searchIdx)
+            const nextWith = html.indexOf('{{with', searchIdx)
+            let nextOpen = -1
+            if (nextIf !== -1) nextOpen = nextIf
+            if (nextRange !== -1 && (nextOpen === -1 || nextRange < nextOpen)) nextOpen = nextRange
+            if (nextWith !== -1 && (nextOpen === -1 || nextWith < nextOpen)) nextOpen = nextWith
+            const nextElse = html.indexOf(elseTag, searchIdx)
+            const nextEnd = html.indexOf(endTag, searchIdx)
+            const cands: Array<{idx:number,type:'if'|'else'|'end'}> = [
+              nextOpen !== -1 ? {idx: nextOpen, type: 'if'} : null,
+              nextElse !== -1 ? {idx: nextElse, type: 'else'} : null,
+              nextEnd !== -1 ? {idx: nextEnd, type: 'end'} : null,
+            ].filter(Boolean) as any
+            if (cands.length===0) break
+            cands.sort((a,b)=>a.idx-b.idx)
+            const nxt = cands[0]
+            if (nxt.type==='if') { depth++; searchIdx = nxt.idx+4 }
+            else if (nxt.type==='else' && depth===1 && elseIdx===-1) { elseIdx = nxt.idx; searchIdx = nxt.idx+elseTag.length }
+            else if (nxt.type==='end') { depth--; if (depth===0) { endIdx = nxt.idx; break } searchIdx = nxt.idx+endTag.length }
+            else searchIdx = nxt.idx+4
+          }
+          if (endIdx===-1) { result += html.slice(startIdx); break }
+          const ifBlock = elseIdx!==-1 ? html.slice(startIdx+startTag.length, elseIdx) : html.slice(startIdx+startTag.length, endIdx)
+          const elseBlock = elseIdx!==-1 ? html.slice(elseIdx+elseTag.length, endIdx) : ''
+          if (hasContacts) {
+            const rowsHtml = contacts.map((c: any) => {
+              const id = String(c.ID ?? c.id ?? '')
+              const name = esc(String(c.Name ?? c.name ?? ''))
+              const phone = esc(String(c.Phone ?? c.phone ?? ''))
+              const email = c.Email ?? c.email ?? ''
+              const emailCell = email ? esc(String(email)) : '<span class="text-gray-300">—</span>'
+              const accountID = String(c.AccountID ?? c.account_id ?? c.accountId ?? '')
+              const accountCell = accountID ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600 font-mono">${esc(accountID.slice(0,8))}</span>` : '<span class="text-gray-300">—</span>'
+              const notes = c.Notes ?? c.notes ?? ''
+              const notesCell = notes ? esc(String(notes).slice(0,80)) : '<span class="text-gray-300">—</span>'
+              const createdAt = String(c.CreatedAt ?? c.created_at ?? '')
+              return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3 font-medium text-gray-900">${name}</td><td class="px-4 py-3 font-mono text-gray-700">${phone}</td><td class="px-4 py-3 text-gray-500">${emailCell}</td><td class="px-4 py-3 text-gray-500">${accountCell}</td><td class="px-4 py-3 text-gray-500 max-w-xs truncate">${notesCell}</td><td class="px-4 py-3 text-gray-500">${esc(timeAgo(createdAt))}</td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-1"><button @click="editContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}', phone: '${escAttr(String(c.Phone ?? c.phone ?? ''))}', email: '${escAttr(String(email))}', notes: '${escAttr(String(notes))}', accountID: '${escAttr(accountID)}' }" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><button @click="deleteContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}' }" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></div></td></tr>`
+            }).join('')
+            let tableHtml = ifBlock
+            tableHtml = tableHtml.replace(/<tbody[^>]*>[\s\S]*?<\/tbody>/, () => `<tbody class="divide-y divide-gray-100">${rowsHtml}</tbody>`)
+            tableHtml = tableHtml.replace(/\{\{[^}]+\}\}/g, (m: string) => (m.includes('hx-')||m.includes('x-')?m:''))
+            result += tableHtml
+          } else {
+            result += elseBlock
+          }
+          lastIndex = endIdx + endTag.length
+        }
+        return result
+      }
+      content = handleContactsIf(content)
+      // Fallback stray {{range .Data.Contacts}}
+      if (content.includes('{{range .Data.Contacts}}')) {
+        const fallback = contacts.map((c: any) => `<tr><td>${esc(String(c.Name ?? ''))}</td><td>${esc(String(c.Phone ?? ''))}</td></tr>`).join('')
+        content = content.replace(/\{\{range \.Data\.Contacts\}\}[\s\S]*?\{\{end\}\}/g, fallback)
+      }
+      // Accounts dropdowns
+      content = content.replace(/\{\{range \.Data\.Accounts\}\}[\s\S]*?\{\{end\}\}/g, accountsOptions)
+      // Search value
+      if (q) {
+        content = content.replace(/value="\{\{\.Data\.Q\}\}"/g, `value="${escAttr(q)}"`)
+      } else {
+        content = content.replace(/value="\{\{\.Data\.Q\}\}"/g, `value=""`)
+      }
+      // Cleanup remaining go tags
+      content = content.replace(/\{\{\.Data\.Q\}\}/g, esc(q))
+      content = content.replace(/\{\{\.Data\.Total\}\}/g, String((data.Data as any)?.Total ?? contacts.length))
     } else if (page === 'billing' || page === 'billing-plans' || page === 'billing-subscriptions' || page === 'billing-usage' || page === 'admin-config' || page === 'subscription') {
     // Billing pages: handle Plans, Subscriptions, Usage, and divCents helper
     const plans: any[] = Array.isArray((data.Data as any)?.Plans) ? (data.Data as any).Plans : ((data.Data as any)?.plans ?? [])
