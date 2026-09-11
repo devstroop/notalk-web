@@ -764,10 +764,7 @@ function evalPageTemplate(page: string, data: PageData): string {
     }
     } else if (page === 'contacts') {
       const contacts: any[] = Array.isArray((data.Data as any)?.Contacts) ? (data.Data as any).Contacts : ((data.Data as any)?.contacts ?? [])
-      const accounts = normalizeAccounts((data.Data as any)?.Accounts ?? (data.Data as any)?.accounts ?? [])
       const q: string = String((data.Data as any)?.Q ?? '')
-      // Accounts dropdown options for modals
-      const accountsOptions = accounts.map((a: any) => `<option value="${escAttr(String(a.ID))}">${esc(a.AccountName)} (${esc(a.PhoneNumber)})</option>`).join('')
       // Handle contacts table {{if .Data.Contacts}} ... {{range .Data.Contacts}} ... {{else}} ... {{end}}
       const hasContacts = contacts.length > 0
       const handleContactsIf = (html: string): string => {
@@ -810,16 +807,35 @@ function evalPageTemplate(page: string, data: PageData): string {
           if (hasContacts) {
             const rowsHtml = contacts.map((c: any) => {
               const id = String(c.ID ?? c.id ?? '')
-              const name = esc(String(c.Name ?? c.name ?? ''))
-              const phone = esc(String(c.Phone ?? c.phone ?? ''))
-              const email = c.Email ?? c.email ?? ''
-              const emailCell = email ? esc(String(email)) : '<span class="text-gray-300">—</span>'
-              const accountID = String(c.AccountID ?? c.account_id ?? c.accountId ?? '')
-              const accountCell = accountID ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600 font-mono">${esc(accountID.slice(0,8))}</span>` : '<span class="text-gray-300">—</span>'
-              const notes = c.Notes ?? c.notes ?? ''
-              const notesCell = notes ? esc(String(notes).slice(0,80)) : '<span class="text-gray-300">—</span>'
+              const name = String(c.Name ?? c.name ?? c.DisplayName ?? c.display_name ?? '')
+              const given = String(c.GivenName ?? c.given_name ?? '')
+              const family = String(c.FamilyName ?? c.family_name ?? '')
+              const displayFallback = name || [given, family].filter(Boolean).join(' ')
+              const nameCell = displayFallback ? esc(displayFallback) : '<span class="text-gray-300">—</span>'
+              const starred = c.Starred ?? c.starred ?? false
+              const starHtml = starred ? '<span class="text-amber-400 mr-1">★</span>' : ''
+              const nickname = String(c.Nickname ?? c.nickname ?? '')
+              const nickHtml = nickname ? `<div class="text-xs text-gray-400">“${esc(nickname)}”</div>` : ''
+              const photo = String(c.PhotoURL ?? c.photo_url ?? '')
+              const photoHtml = photo ? `<img src="${escAttr(photo)}" alt="" class="w-6 h-6 rounded-full mt-1 object-cover"/>` : ''
+              const company = String(c.Company ?? c.company ?? '')
+              const dept = String(c.Department ?? c.department ?? '')
+              const job = String(c.JobTitle ?? c.job_title ?? c.JobTitle ?? '')
+              let companyCell = ''
+              if (company) companyCell += `<div class="font-medium">${esc(company)}</div>`
+              if (job) companyCell += `<div class="text-xs text-gray-500">${esc(job)}${dept ? ` · ${esc(dept)}` : ''}</div>`
+              if (!companyCell) companyCell = '<span class="text-gray-300">—</span>'
+              const rawPhone = String(c.Phone ?? c.phone ?? '')
+              const phoneCell = rawPhone ? esc(rawPhone) : '<span class="text-gray-300">—</span>'
+              const email = String(c.Email ?? c.email ?? '')
+              const emailCell = email ? esc(email) : '<span class="text-gray-300">—</span>'
+              const tagsRaw: any = c.Tags ?? c.tags ?? []
+              const tagsArr: string[] = Array.isArray(tagsRaw) ? tagsRaw : (typeof tagsRaw === 'string' ? (()=>{try{const p=JSON.parse(tagsRaw); return Array.isArray(p)?p:[]}catch{return []}})() : [])
+              const tagsCell = tagsArr.length ? `<div class="flex flex-wrap gap-1.5">${tagsArr.map((t:string)=>`<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">${esc(t)}</span>`).join('')}</div>` : '<span class="text-gray-300">—</span>'
+              const birthday = String(c.Birthday ?? c.birthday ?? '')
+              const birthdayCell = birthday ? esc(birthday) : '<span class="text-gray-300">—</span>'
               const createdAt = String(c.CreatedAt ?? c.created_at ?? '')
-              return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3 font-medium text-gray-900">${name}</td><td class="px-4 py-3 font-mono text-gray-700">${phone}</td><td class="px-4 py-3 text-gray-500">${emailCell}</td><td class="px-4 py-3 text-gray-500">${accountCell}</td><td class="px-4 py-3 text-gray-500 max-w-xs truncate">${notesCell}</td><td class="px-4 py-3 text-gray-500">${esc(timeAgo(createdAt))}</td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-1"><button @click="editContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}', phone: '${escAttr(String(c.Phone ?? c.phone ?? ''))}', email: '${escAttr(String(email))}', notes: '${escAttr(String(notes))}', accountID: '${escAttr(accountID)}' }" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><button @click="deleteContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}' }" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></div></td></tr>`
+              return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3"><div class="flex items-center gap-2">${starHtml}<span class="font-medium text-gray-900">${nameCell}</span></div>${nickHtml}${photoHtml}</td><td class="px-4 py-3 text-gray-700">${companyCell}</td><td class="px-4 py-3 font-mono text-gray-700">${phoneCell}</td><td class="px-4 py-3 text-gray-500">${emailCell}</td><td class="px-4 py-3">${tagsCell}</td><td class="px-4 py-3 text-gray-500">${birthdayCell}</td><td class="px-4 py-3 text-gray-500 whitespace-nowrap">${esc(timeAgo(createdAt))}</td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-1"><button @click="editContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}', given_name: '${escAttr(String(c.GivenName ?? c.given_name ?? ''))}', family_name: '${escAttr(String(c.FamilyName ?? c.family_name ?? ''))}', middle_name: '${escAttr(String(c.MiddleName ?? c.middle_name ?? ''))}', name_prefix: '${escAttr(String(c.NamePrefix ?? c.name_prefix ?? ''))}', name_suffix: '${escAttr(String(c.NameSuffix ?? c.name_suffix ?? ''))}', nickname: '${escAttr(String(c.Nickname ?? c.nickname ?? ''))}', company: '${escAttr(String(c.Company ?? c.company ?? ''))}', department: '${escAttr(String(c.Department ?? c.department ?? ''))}', job_title: '${escAttr(String(c.JobTitle ?? c.job_title ?? ''))}', phone: '${escAttr(String(c.Phone ?? c.phone ?? ''))}', email: '${escAttr(String(email))}', birthday: '${escAttr(birthday)}', website: '${escAttr(String(c.Website ?? c.website ?? ''))}', photo_url: '${escAttr(String(c.PhotoURL ?? c.photo_url ?? ''))}', notes: '${escAttr(String(c.Notes ?? c.notes ?? ''))}', tags: '${escAttr(tagsArr.join(','))}', starred: ${starred ? 'true' : 'false'} }" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><button @click="deleteContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}' }" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></div></td></tr>`
             }).join('')
             let tableHtml = ifBlock
             tableHtml = tableHtml.replace(/<tbody[^>]*>[\s\S]*?<\/tbody>/, () => `<tbody class="divide-y divide-gray-100">${rowsHtml}</tbody>`)
@@ -838,8 +854,6 @@ function evalPageTemplate(page: string, data: PageData): string {
         const fallback = contacts.map((c: any) => `<tr><td>${esc(String(c.Name ?? ''))}</td><td>${esc(String(c.Phone ?? ''))}</td></tr>`).join('')
         content = content.replace(/\{\{range \.Data\.Contacts\}\}[\s\S]*?\{\{end\}\}/g, fallback)
       }
-      // Accounts dropdowns
-      content = content.replace(/\{\{range \.Data\.Accounts\}\}[\s\S]*?\{\{end\}\}/g, accountsOptions)
       // Search value
       if (q) {
         content = content.replace(/value="\{\{\.Data\.Q\}\}"/g, `value="${escAttr(q)}"`)
