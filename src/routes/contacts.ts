@@ -35,48 +35,25 @@ export function registerContactsRoutes(app: Hono): void {
     )
   })
 
-  // Create contact — only id is mandatory (hidden); all else optional, standard fields
+  // Create contact — lean: only id is mandatory (hidden); phone/email optional
   app.post('/contacts', async (c) => {
     const token = getToken(c)!
     const form = await c.req.parseBody()
     const get = (k: string) => String(form[k] ?? '').trim()
     const payload: any = {}
-    // Standard name fields — map to model; name is display_name
     const name = get('name')
-    const given = get('given_name')
-    const family = get('family_name')
-    const middle = get('middle_name')
-    const prefix = get('name_prefix')
-    const suffix = get('name_suffix')
-    const nickname = get('nickname')
+    const phone = get('phone')
+    const email = get('email')
+    const company = get('company')
+    const notes = get('notes')
+    const tagsRaw = get('tags')
     if (name) payload.name = name
-    else if (given || family) payload.name = [given, family].filter(Boolean).join(' ')
-    if (given) payload.given_name = given
-    if (family) payload.family_name = family
-    if (middle) payload.middle_name = middle
-    if (prefix) payload.name_prefix = prefix
-    if (suffix) payload.name_suffix = suffix
-    if (nickname) payload.nickname = nickname
-    // Organization
-    const company = get('company'), dept = get('department'), title = get('job_title')
-    if (company) payload.company = company
-    if (dept) payload.department = dept
-    if (title) payload.job_title = title
-    // Contact points — optional
-    const phone = get('phone'), email = get('email')
     if (phone) payload.phone = phone
     if (email) payload.email = email
-    // Birthday, website, photo
-    const birthday = get('birthday'), website = get('website'), photo = get('photo_url')
-    if (birthday) payload.birthday = birthday
-    if (website) payload.website = website
-    if (photo) payload.photo_url = photo
-    // Notes, tags, starred
-    const notes = get('notes'), tagsRaw = get('tags')
+    if (company) payload.company = company
     if (notes) payload.notes = notes
     if (tagsRaw) payload.tags = tagsRaw.split(',').map(s => s.trim()).filter(Boolean)
     if (form['starred'] !== undefined) payload.starred = String(form['starred']) === 'on' || String(form['starred']) === 'true'
-    // allow completely empty contact — will create with id only
 
     const { status, data } = await backend.json('POST', '/api/v1/contacts', token, payload)
     if (status >= 400) {
@@ -87,14 +64,13 @@ export function registerContactsRoutes(app: Hono): void {
     return c.redirect('/contacts', 303)
   })
 
-  // Update contact — all standard fields optional, allow clearing by sending empty string
+  // Update contact — lean: allow clearing by sending empty string
   app.post('/contacts/:id/update', async (c) => {
     const token = getToken(c)!
     const id = c.req.param('id')
     const form = await c.req.parseBody()
     const payload: any = {}
-    const fields = ['name','display_name','given_name','family_name','middle_name','name_prefix','name_suffix','nickname','company','department','job_title','phone','email','birthday','website','photo_url','notes','source']
-    for (const f of fields) {
+    for (const f of ['name','phone','email','company','notes']) {
       if (form[f] !== undefined) payload[f] = String(form[f] ?? '').trim()
     }
     if (form['tags'] !== undefined) {
@@ -102,10 +78,7 @@ export function registerContactsRoutes(app: Hono): void {
       payload.tags = raw ? raw.split(',').map((s:string) => s.trim()).filter(Boolean) : []
     }
     if (form['starred'] !== undefined) {
-      // checkbox: on => true, missing => false handled via hidden field
       payload.starred = String(form['starred']) === 'on' || String(form['starred']) === 'true'
-    } else if (form['starred_checkbox'] !== undefined) {
-      payload.starred = false
     }
 
     const { status, data } = await backend.json('PATCH', `/api/v1/contacts/${id}`, token, payload)
