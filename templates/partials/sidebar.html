@@ -42,7 +42,7 @@
     </a>
 
     <!-- Accounts group -->
-    <div x-data="{open: grpAccounts}" class="w-full {{$item}} {{if or (eq .Page "accounts") (eq .Page "account-detail")}}{{$active}}{{end}} !gap-0">
+    <div x-data="{open: grpAccounts}" class="w-full {{$item}} {{if or (eq .Page "accounts") (eq .Page "account-detail") (eq .Page "account-chat")}}{{$active}}{{end}} !gap-0">
       <a href="/accounts" title="Accounts" class="flex items-center gap-2.5 flex-1 min-w-0 text-inherit">
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/></svg>
         <span x-show="sidebarOpen" x-transition class="flex-1">Accounts</span>
@@ -54,10 +54,6 @@
       <a href="/accounts?new=1" title="New Account" class="{{$child}}">
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         <span class="flex-1">New Account</span>
-      </a>
-      <a href="/whatsapp" title="WhatsApp Web" class="{{$child}} {{if eq .Page "messaging"}}{{$active}}{{end}}">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
-        <span class="flex-1">WhatsApp Web</span>
       </a>
     </div>
 

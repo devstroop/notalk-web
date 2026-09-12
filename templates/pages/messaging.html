@@ -5,53 +5,15 @@
   <div class="flex flex-wrap items-center justify-between gap-2 bg-white border-b border-gray-200 px-4 py-2 shrink-0"
        :class="activeChat ? 'hidden md:flex' : 'flex'">
     <div class="flex items-center gap-3 min-w-0">
-      <h3 class="text-base text-gray-900 shrink-0">Account</h3>
-       <!-- Custom account picker -->
-      <div x-data="{ open: false }" @keydown.escape.window="open = false" class="relative">
-        <button @click="open = !open" type="button"
-                class="flex items-center gap-2 pl-3 pr-2 py-1.5 border rounded-xl text-left transition-all max-w-[260px] min-w-[160px]"
-                :class="open ? 'border-brand-400 ring-2 ring-brand-100 bg-white' : ($root.sender && !$root.senderConnected ? 'border-amber-300 bg-amber-50 hover:border-amber-400' : 'border-gray-200 bg-white hover:border-gray-300')">
-          <template x-if="!$root.sender">
-            <span class="flex-1 text-sm text-gray-400 truncate">Select account…</span>
-          </template>
-          <template x-if="$root.sender">
-            <div class="flex items-center gap-2 flex-1 min-w-0">
-              <span class="w-2 h-2 rounded-full shrink-0" :class="$root.senderConnected ? 'bg-green-500' : 'bg-amber-400'"></span>
-              <span class="text-sm font-medium text-gray-900 truncate" x-text="$root.selectedAccountName"></span>
-            </div>
-          </template>
-          <svg class="w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform ml-1" :class="open ? 'rotate-180' : ''"
-               fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
-        </button>
-        <!-- Dropdown panel -->
-        <div x-show="open" @click.outside="open = false"
-             x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-             x-transition:leave="transition ease-in duration-75" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
-             class="absolute top-full left-0 mt-1.5 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden origin-top-left">
-          {{if .Data.Accounts}}
-          {{range .Data.Accounts}}
-          <button type="button"
-                  @click="$root.sender = '{{.ID}}'; open = false; $root.onAccountChange()"
-                  class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left group"
-                  :class="$root.sender === '{{.ID}}' ? 'bg-brand-50' : ''">
-            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all"
-                 :class="$root.sender === '{{.ID}}' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600'">
-              {{if .AccountName}}{{slice .AccountName 0 1}}{{else}}?{{end}}
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-900 truncate">{{.AccountName}}</p>
-              {{if .PhoneNumber}}<p class="text-xs text-gray-400">{{.PhoneNumber}}</p>{{end}}
-            </div>
-            <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 {{if .Connected}}text-green-700 bg-green-100{{else}}text-amber-700 bg-amber-100{{end}}">
-              <span class="w-1.5 h-1.5 rounded-full {{if .Connected}}bg-green-500{{else}}bg-amber-400{{end}}"></span>
-              {{if .Connected}}Online{{else}}Offline{{end}}
-            </span>
-          </button>
-          {{end}}
-          {{else}}
-          <div class="px-4 py-3 text-sm text-gray-400 text-center">No accounts yet. <a href="/accounts" class="text-brand-800 hover:underline">Create one</a></div>
-          {{end}}
+      <a href="/accounts" title="Back to Accounts" class="p-1.5 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      </a>
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full shrink-0" :class="senderConnected ? 'bg-green-500' : 'bg-amber-400'"></span>
+          <h3 class="text-base font-medium text-gray-900 truncate">{{.Data.Account.AccountName}}</h3>
         </div>
+        {{if .Data.Account.PhoneNumber}}<p class="text-xs text-gray-400 truncate">{{.Data.Account.PhoneNumber}}</p>{{end}}
       </div>
     </div>
     <div class="flex items-center gap-1 shrink-0">
@@ -95,8 +57,6 @@
         <div x-show="loading" class="flex items-center justify-center py-12">
           <svg class="w-6 h-6 text-gray-300 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
         </div>
-        <!-- No account -->
-        <div x-show="!sender && !loading" class="px-4 py-12 text-center text-sm text-gray-400">Select an account to begin</div>
         <!-- Account offline -->
         <div x-show="sender && !senderConnected && !loading" class="flex flex-col items-center justify-center px-6 py-10 text-center space-y-4">
           <div class="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
@@ -454,14 +414,7 @@
 </div>
 
 <script>
-window._accountConnected = {
-  {{range .Data.Accounts}}"{{.ID}}": {{if .Connected}}true{{else}}false{{end}},
-  {{end}}
-};
-window._accountMeta = {
-  {{range .Data.Accounts}}"{{.ID}}": { name: "{{.AccountName}}", phone: "{{.PhoneNumber}}" },
-  {{end}}
-};
+window._chatAccount = { id: "{{.Data.Account.ID}}", connected: {{if .Data.Account.Connected}}true{{else}}false{{end}} };
 </script>
 <script src="/static/js/messaging.js"></script>
 {{end}}
