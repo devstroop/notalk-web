@@ -18,6 +18,24 @@ document.addEventListener('DOMContentLoaded', function() {
     showToast('error', msg);
   });
 
+  // ── Native dialog delegation (component/dialog-open) ──
+  // Open via data-dialog-trigger + data-dialog-target="id", or Alpine $refs.
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest ? e.target.closest('[data-dialog-trigger]') : null;
+    if (t) {
+      var d = document.getElementById(t.getAttribute('data-dialog-target'));
+      if (d && d.showModal) d.showModal();
+    }
+    var c = e.target.closest ? e.target.closest('[data-dialog-close]') : null;
+    if (c) {
+      var dlg = c.closest('dialog');
+      if (dlg) dlg.close();
+    }
+  });
+  document.querySelectorAll('dialog[data-close-on-backdrop="true"]').forEach(function (d) {
+    d.addEventListener('click', function (e) { if (e.target === d) d.close(); });
+  });
+
   // ── Button loading states ──
   // Any form with a .btn-loading button will show a spinner on submit
   document.addEventListener('submit', function(e) {

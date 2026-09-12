@@ -1134,14 +1134,60 @@ function evalPageTemplate(page: string, data: PageData): string {
     part = part.replace(/\{\{end\}\}\s*$/, '')
     html = html.replace(re, part)
   }
+  html = html.replace(/\{\{template "content"[^}]*\}\}/g, content)
+  // Components must inline AFTER the page content merge: calls live in
+  // page bodies, and anything unprocessed here is stripped as unknown below.
   for (const c of components.length ? components : ['badge', 'stat-card', 'empty-state']) {
     const re = new RegExp(`\\{\\{template "component/${c}"[^}]*\\}\\}`, 'g')
     let comp = raw(`components/${c}.html`)
     comp = comp.replace(/\{\{define "[^"]*"\}\}/, '')
     comp = comp.replace(/\{\{end\}\}\s*$/, '')
-    html = html.replace(re, comp)
+    // dict support: {{template "component/x" (dict "k" "v" ...)}} substitutes
+    // {{.k}}, {{if eq .k "lit"}}..{{end}} and {{if .k}}..{{else}}..{{end}} per call.
+    // Without this, dict-components render empty (args were silently dropped).
+    html = html.replace(re, (call) => {
+      // dict values: "literal", .Data.Dotted.Path (resolved now), or bare token.
+      const resolveDataPath = (path: string): string => {
+        let cur: any = data.Data
+        for (const part of path.split('.')) {
+          if (cur == null) return ''
+          cur = cur[part]
+        }
+        return cur == null ? '' : String(cur)
+      }
+      const dm = call.match(/\(dict([\s\S]*)\)\s*\}\}/)
+      const args: Record<string, string> = {}
+      if (dm) {
+        const toks = [...dm[1].matchAll(/"([^"]*)"|(\.Data\.[A-Za-z0-9_.]+)|(\S+)/g)]
+        for (let i = 0; i + 1 < toks.length; i += 2) {
+          const key = toks[i][1] ?? ''
+          if (!key) continue
+          const v = toks[i + 1]
+          args[key] = v[1] ?? (v[2] ? resolveDataPath(v[2].slice(6)) : (v[3] ?? ''))
+        }
+      }
+      let out = comp
+      out = out.replace(/\{\{\/\*[\s\S]*?\*\/\}\}/g, '')
+      // Innermost-first evaluation: single-pass regexes mis-pair markers when
+      // conditionals nest (e.g. eq-ifs inside an if/else), so resolve blocks
+      // containing no nested {{if}} repeatedly until none remain.
+      const condRe = /\{\{if (eq \.([A-Za-z0-9_]+) "([^"]*)"|(not )?\.([A-Za-z0-9_]+))\}\}((?:(?!\{\{if )[\s\S])*?)\{\{end\}\}/
+      for (let guard = 0; guard < 25; guard++) {
+        const m = out.match(condRe)
+        if (!m || m.index === undefined) break
+        const [, , eqKey, eqLit, notPrefix, key, inner] = m
+        const parts = inner.split('{{else}}')
+        const branch = parts.length > 1 ? parts.slice(0, -1).join('{{else}}') + '\x00' + parts[parts.length - 1] : inner
+        const [a, b] = branch.split('\x00')
+        let cond: boolean
+        if (eqKey !== undefined) cond = (args[eqKey] ?? '') === eqLit
+        else cond = notPrefix ? !args[key] : !!args[key]
+        out = out.slice(0, m.index) + (cond ? (a ?? inner) : (b ?? '')) + out.slice(m.index + m[0].length)
+      }
+      out = out.replace(/\{\{\.([A-Za-z0-9_]+)\}\}/g, (_m, k) => esc(args[k] ?? ''))
+      return out
+    })
   }
-  html = html.replace(/\{\{template "content"[^}]*\}\}/g, content)
   const repl: Array<[RegExp, string]> = [
     [/\{\{\.Title\}\}/g, esc(data.Title)],
     [/\{\{\.Heading\}\}/g, esc(data.Heading ?? '')],
