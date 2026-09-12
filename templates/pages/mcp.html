@@ -124,19 +124,7 @@
       </a>
     </div>
 
-    <div class="bg-amber-50 border border-amber-200 rounded-md p-4">
-      <div class="flex gap-3">
-        <svg class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <div>
-          <p class="text-sm font-medium text-amber-800">Security Note</p>
-          <p class="text-sm text-amber-700 mt-1">
-            MCP tools can send messages, manage groups, and access contacts.
-            Create dedicated API keys with account-level scoping for each AI client.
-            Never share the system secret key with MCP clients.
-          </p>
-        </div>
-      </div>
-    </div>
+    {{template "component/feedback/alert" (dict "variant" "warning" "title" "Security Note" "desc" "MCP tools can send messages, manage groups, and access contacts. Create dedicated API keys with account-level scoping for each AI client. Never share the system secret key with MCP clients.")}}
   </div>
 </div>
 

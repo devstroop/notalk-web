@@ -11,15 +11,7 @@
       <p class="text-sm text-gray-500">{{.Data.Account.AccountName}} · Auto-reply with AI</p>
     </div>
     <div class="ml-auto flex items-center gap-3">
-      {{if .Data.Connected}}
-        <span class="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-100 px-2.5 py-1 rounded-full">
-          <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>Connected
-        </span>
-      {{else}}
-        <span class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
-          <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>Offline
-        </span>
-      {{end}}
+      {{if .Data.Connected}}{{template "component/display/status-dot" (dict "color" "green" "label" "Connected")}}{{else}}{{template "component/display/status-dot" (dict "label" "Offline")}}{{end}}
       <!-- Quick toggle -->
       <form method="POST" action="/accounts/{{.Data.Account.ID}}/autopilot/toggle">
         <button type="submit"
@@ -58,11 +50,7 @@
           <p class="text-sm font-medium text-gray-900">Enable Autopilot</p>
           <p class="text-xs text-gray-500 mt-0.5">Automatically reply to incoming messages using AI</p>
         </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-          <input type="checkbox" name="enabled" value="1" {{if .Data.Config.Enabled}}checked{{end}} class="sr-only peer">
-          <div class="w-10 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-          <input type="hidden" name="enabled" value="0">
-        </label>
+        {{template "component/forms/switch" (dict "name" "enabled" "checked" .Data.Config.Enabled "tone" "violet")}}
       </div>
 
       <!-- Fix: only submit the checkbox value when checked, use hidden field trick with JS below -->
@@ -103,11 +91,7 @@
             <p class="text-sm font-medium text-gray-900">AI Escalation Detection</p>
             <p class="text-xs text-gray-500 mt-0.5">AI detects when a user wants to speak with a human and sends a handoff message automatically.</p>
           </div>
-          <label class="relative inline-flex items-center cursor-pointer ml-6 shrink-0">
-            <input type="checkbox" name="escalation_enabled" value="1" {{if .Data.Config.EscalationEnabled}}checked{{end}} x-model="escalation" class="sr-only peer">
-            <div class="w-10 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            <input type="hidden" name="escalation_enabled" value="0">
-          </label>
+          <span class="ml-6 shrink-0">{{template "component/forms/switch" (dict "name" "escalation_enabled" "checked" .Data.Config.EscalationEnabled "xmodel" "escalation" "tone" "violet")}}</span>
         </div>
         <div x-show="escalation" x-transition class="pt-4 space-y-1.5">
           <label class="text-sm font-medium text-gray-700">Handoff Message</label>

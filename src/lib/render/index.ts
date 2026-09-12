@@ -164,6 +164,11 @@ function renderGoConditionals(html: string, data: PageData): string {
   if (data.Identity) {
     html = html.replace(/\{\{if \.Identity\}\}, \{\{\.Identity\.Username\}\}\{\{end\}\}/g, `, ${esc(data.Identity.username)}`)
     html = html.replace(/\{\{\.Identity\.Username\}\}/g, esc(data.Identity.username))
+    // upper(initial ...) for avatar circles (navbar); engine has no string ops otherwise.
+    html = html.replace(/\{\{upper \(initial \.Identity\.Username\)\}\}/g, () => {
+      const ch = String((data.Identity as any)?.username ?? '').trim().charAt(0).toUpperCase()
+      return esc(ch || '?')
+    })
   } else {
     html = html.replace(/\{\{if \.Identity\}\}[\s\S]*?\{\{end\}\}/g, '')
   }
@@ -259,21 +264,57 @@ function renderGoConditionals(html: string, data: PageData): string {
     return result
   }
   html = handleUserIf(html)
-  html = html.replace(/\{\{if \.Data\.([A-Za-z0-9_.]+)\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{end\}\}/g, (m, path, a, b) => {
-    const v = getDataByPath(path)
-    const truthy = Array.isArray(v) ? v.length > 0 : !!v
-    return truthy ? a : b
-  })
-  html = html.replace(/\{\{if not \.Data\.([A-Za-z0-9_.]+)\}\}([\s\S]*?)\{\{end\}\}/g, (m, path, inner) => {
-    const v = getDataByPath(path)
-    const truthy = Array.isArray(v) ? v.length > 0 : !!v
-    return !truthy ? inner : ''
-  })
-  html = html.replace(/\{\{if \.Data\.([A-Za-z0-9_.]+)\}\}([\s\S]*?)\{\{end\}\}/g, (m, path, inner) => {
-    const v = getDataByPath(path)
-    const truthy = Array.isArray(v) ? v.length > 0 : !!v
-    return truthy ? inner : ''
-  })
+  // Depth-aware generic .Data conditionals. The old blind regexes paired an
+  // {{if}} with a far-away {{else}}/{{end}} from an unrelated block (e.g. an
+  // if without else swallowing content up to the next block's else), silently
+  // deleting page regions. Match with nesting depth like handleUsersIf does.
+  const evalDataIfs = (src: string): string => {
+    const openRe = /\{\{if (not )?(\.Data\.[A-Za-z0-9_.]+)\}\}/g
+    let result = '', rest = src
+    for (let guard = 0; guard < 50; guard++) {
+      openRe.lastIndex = 0
+      const om = openRe.exec(rest)
+      if (!om) break
+      const neg = !!om[1]
+      const path = om[2].slice(6)
+      // scan with depth counting; record top-level exact {{else}} only
+      // ({{else if ...}} belongs to chains handled by specific handlers)
+      let depth = 1, idx = om.index + om[0].length, elseIdx = -1, endIdx = -1
+      while (depth > 0 && idx < rest.length) {
+        const ni = rest.indexOf('{{if', idx)
+        const nr = rest.indexOf('{{range', idx)
+        const nw = rest.indexOf('{{with', idx)
+        const ne = rest.indexOf('{{else}}', idx)
+        const nd = rest.indexOf('{{end}}', idx)
+        const cands: Array<{ i: number; t: string }> = []
+        if (ni !== -1) cands.push({ i: ni, t: 'open' })
+        if (nr !== -1) cands.push({ i: nr, t: 'open' })
+        if (nw !== -1) cands.push({ i: nw, t: 'open' })
+        if (ne !== -1) cands.push({ i: ne, t: 'else' })
+        if (nd !== -1) cands.push({ i: nd, t: 'end' })
+        if (!cands.length) break
+        cands.sort((a, b) => a.i - b.i)
+        const nx = cands[0]
+        if (nx.t === 'open') { depth++; idx = nx.i + 4 }
+        else if (nx.t === 'else' && depth === 1 && elseIdx === -1) { elseIdx = nx.i; idx = nx.i + 8 }
+        else if (nx.t === 'end') {
+          depth--
+          if (depth === 0) { endIdx = nx.i; break }
+          idx = nx.i + 7
+        } else { idx = nx.i + 4 }
+      }
+      if (endIdx === -1) break // unbalanced: leave rest untouched
+      const a = rest.slice(om.index + om[0].length, elseIdx !== -1 ? elseIdx : endIdx)
+      const b = elseIdx !== -1 ? rest.slice(elseIdx + 8, endIdx) : ''
+      const v = getDataByPath(path)
+      const truthy = Array.isArray(v) ? v.length > 0 : !!v
+      const keep = neg ? !truthy : truthy
+      result += rest.slice(0, om.index) + (keep ? a : b)
+      rest = rest.slice(endIdx + 7)
+    }
+    return result + rest
+  }
+  html = evalDataIfs(html)
   // Handle inline checked and true/false for Config
   html = html.replace(/\{\{if \.Data\.Config\.Enabled\}\}checked\{\{end\}\}/g, getDataByPath('Config.Enabled') ? 'checked' : '')
   html = html.replace(/\{\{if \.Data\.Config\.EscalationEnabled\}\}checked\{\{end\}\}/g, getDataByPath('Config.EscalationEnabled') ? 'checked' : '')
@@ -1153,16 +1194,18 @@ function evalPageTemplate(page: string, data: PageData): string {
     // Without this, dict-components render empty (args were silently dropped).
     html = html.replace(re, (call) => {
       // dict values: "literal", .Data.Dotted.Path (resolved now), or bare token.
-      const resolveDataPath = (path: string): string => {
+      const resolveDataPath = (path: string): any => {
         let cur: any = data.Data
         for (const part of path.split('.')) {
           if (cur == null) return ''
           cur = cur[part]
         }
-        return cur == null ? '' : String(cur)
+        return cur == null ? '' : cur
       }
+      // Falsy: '', false, and the string 'false' (so .Data booleans behave).
+      const isTruthy = (v: any): boolean => v !== '' && v !== false && v !== 'false' && v != null
       const dm = call.match(/\(dict([\s\S]*)\)\s*\}\}/)
-      const args: Record<string, string> = {}
+      const args: Record<string, any> = {}
       if (dm) {
         const toks = [...dm[1].matchAll(/"([^"]*)"|(\.Data\.[A-Za-z0-9_.]+)|(\S+)/g)]
         for (let i = 0; i + 1 < toks.length; i += 2) {
@@ -1186,11 +1229,11 @@ function evalPageTemplate(page: string, data: PageData): string {
         const branch = parts.length > 1 ? parts.slice(0, -1).join('{{else}}') + '\x00' + parts[parts.length - 1] : inner
         const [a, b] = branch.split('\x00')
         let cond: boolean
-        if (eqKey !== undefined) cond = (args[eqKey] ?? '') === eqLit
-        else cond = notPrefix ? !args[key] : !!args[key]
+        if (eqKey !== undefined) cond = String(args[eqKey] ?? '') === eqLit
+        else cond = notPrefix ? !isTruthy(args[key]) : isTruthy(args[key])
         out = out.slice(0, m.index) + (cond ? (a ?? inner) : (b ?? '')) + out.slice(m.index + m[0].length)
       }
-      out = out.replace(/\{\{\.([A-Za-z0-9_]+)\}\}/g, (_m, k) => esc(args[k] ?? ''))
+      out = out.replace(/\{\{\.([A-Za-z0-9_]+)\}\}/g, (_m, k) => esc(args[k] == null ? '' : String(args[k])))
       return out
     })
   }

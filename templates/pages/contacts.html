@@ -221,7 +221,7 @@
   </template>
 
   <!-- Delete Contact Confirm -->
-  {{template "component/overlays/dialog-open" (dict "id" "deleteContactModal" "xref" "deleteContactModal" "title" "Delete contact?")}}
+  {{template "component/overlays/dialog-open" (dict "id" "deleteContactModal" "xref" "deleteContactModal" "title" "Delete contact?" "tone" "danger")}}
       <p class="text-sm text-gray-500">Delete <strong x-text="deleteContact?.name || deleteContact?.id"></strong>. This cannot be undone.</p>
       <form method="POST" :action="'/contacts/' + deleteContact?.id + '/delete'" class="flex justify-end gap-3 pt-2">
         {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "deleteContact = null")}}
@@ -258,7 +258,7 @@
   </template>
 
   <!-- Delete Group Confirm -->
-  {{template "component/overlays/dialog-open" (dict "id" "deleteGroupModal" "xref" "deleteGroupModal" "title" "Delete group?")}}
+  {{template "component/overlays/dialog-open" (dict "id" "deleteGroupModal" "xref" "deleteGroupModal" "title" "Delete group?" "tone" "danger")}}
       <p class="text-sm text-gray-500">Delete group <strong x-text="deleteGroup?.name"></strong>? Contacts will remain, only the group label is removed.</p>
       <form method="POST" :action="'/contact-groups/' + deleteGroup?.id + '/delete'" class="flex justify-end gap-3 pt-2">
         {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "deleteGroup = null")}}
