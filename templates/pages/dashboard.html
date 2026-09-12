@@ -8,10 +8,10 @@
 
   <!-- Stats -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-    {{template "component/stat-card" (dict "label" "Total Accounts" "value" .Data.TotalAccounts "icon" "accounts" "color" "brand")}}
-    {{template "component/stat-card" (dict "label" "Connected" "value" .Data.Connected "icon" "connected" "color" "green")}}
-    {{template "component/stat-card" (dict "label" "Disconnected" "value" .Data.Disconnected "icon" "disconnected" "color" "yellow")}}
-    {{template "component/stat-card" (dict "label" "Users" "value" .Data.TotalUsers "icon" "users" "color" "blue")}}
+    {{template "component/display/stat-card" (dict "label" "Total Accounts" "value" .Data.TotalAccounts "icon" "accounts" "color" "brand")}}
+    {{template "component/display/stat-card" (dict "label" "Connected" "value" .Data.Connected "icon" "connected" "color" "green")}}
+    {{template "component/display/stat-card" (dict "label" "Disconnected" "value" .Data.Disconnected "icon" "disconnected" "color" "yellow")}}
+    {{template "component/display/stat-card" (dict "label" "Users" "value" .Data.TotalUsers "icon" "users" "color" "blue")}}
   </div>
 
   <!-- Recent accounts -->

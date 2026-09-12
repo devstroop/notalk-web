@@ -73,7 +73,7 @@
   </div>
 
   <!-- Create API Key modal -->
-  {{template "component/dialog-open" (dict "id" "createKeyModal" "xref" "createKeyModal" "title" "Create API Key")}}
+  {{template "component/overlays/dialog-open" (dict "id" "createKeyModal" "xref" "createKeyModal" "title" "Create API Key")}}
       <form method="POST" action="/api-keys" @submit.prevent="
         const fd = new FormData($el);
         fetch('/api-keys', {method:'POST', body: fd}).then(r=>r.json()).then(j=>{
@@ -82,7 +82,7 @@
           location.reload();
         }).catch(e=>alert(e));
       " class="space-y-4">
-        {{template "component/input" (dict "label" "Name" "name" "name" "required" "1" "placeholder" "e.g. Production, Zapier")}}
+        {{template "component/forms/input" (dict "label" "Name" "name" "name" "required" "1" "placeholder" "e.g. Production, Zapier")}}
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Account <span class="text-gray-400 font-normal">(optional, leave empty for all)</span></label>
           <select name="account_id"
@@ -93,23 +93,23 @@
             {{end}}
           </select>
         </div>
-        {{template "component/input" (dict "label" "Expires" "name" "expires_at" "type" "datetime-local" "hint" "Optional.")}}
+        {{template "component/forms/input" (dict "label" "Expires" "name" "expires_at" "type" "datetime-local" "hint" "Optional.")}}
         <div class="flex justify-end gap-3 pt-2">
-          {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
-          {{template "component/button" (dict "text" "Create" "type" "submit")}}
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
+          {{template "component/forms/button" (dict "text" "Create" "type" "submit")}}
         </div>
       </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
 
   <!-- Delete API Key modal -->
-  {{template "component/dialog-open" (dict "id" "revokeModal" "xref" "revokeModal" "title" "Revoke API Key")}}
+  {{template "component/overlays/dialog-open" (dict "id" "revokeModal" "xref" "revokeModal" "title" "Revoke API Key")}}
       <p class="text-sm text-gray-600">Are you sure you want to revoke <strong x-text="deleteName"></strong>? This cannot be undone.</p>
       <div class="flex justify-end gap-3 pt-2">
-        {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "deleteID = ''; deleteName = ''")}}
+        {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "deleteID = ''; deleteName = ''")}}
         <button @click="
           fetch('/api-keys/'+deleteID+'/delete', {method:'POST'}).then(()=>{location.reload();}).catch(e=>alert(e));
         " class="px-4 py-2 text-sm text-white bg-red-600 rounded-md hover:bg-red-700">Revoke</button>
       </div>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
 </div>
 {{end}}

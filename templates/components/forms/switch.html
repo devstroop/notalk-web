@@ -1,0 +1,8 @@
+{{define "component/forms/switch"}}
+{{/* Usage: {{template "component/forms/switch" (dict "name" "enabled" "checked" "1" "xmodel" "on")}} — replicates the peer-toggle idiom (hidden 0-fallback included for plain POST forms). */}}
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+  <input type="checkbox" name="{{.name}}" value="1"{{if .checked}} checked{{end}}{{if .xmodel}} x-model="{{.xmodel}}"{{end}} class="sr-only peer">
+  <div class="w-10 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-brand-100 rounded-full peer peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+  <input type="hidden" name="{{.name}}" value="0">
+</label>
+{{end}}

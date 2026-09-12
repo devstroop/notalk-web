@@ -5,12 +5,12 @@
     <p class="text-sm text-gray-500 mb-6">Sign in to your account to continue.</p>
 
     <div class="space-y-4">
-      {{template "component/input" (dict "label" "Username" "name" "username" "id" "username" "required" "1" "autofocus" "1" "placeholder" "Enter your username")}}
-      {{template "component/input" (dict "label" "Password" "name" "password" "id" "password" "type" "password" "required" "1" "placeholder" "Enter your password")}}
+      {{template "component/forms/input" (dict "label" "Username" "name" "username" "id" "username" "required" "1" "autofocus" "1" "placeholder" "Enter your username")}}
+      {{template "component/forms/input" (dict "label" "Password" "name" "password" "id" "password" "type" "password" "required" "1" "placeholder" "Enter your password")}}
     </div>
 
     <div class="mt-6">
-      {{template "component/button" (dict "text" "Sign in" "type" "submit" "block" "1" "loading" "1")}}
+      {{template "component/forms/button" (dict "text" "Sign in" "type" "submit" "block" "1" "loading" "1")}}
     </div>
 
     <div class="mt-5 flex items-center justify-between text-sm">

@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs'
+import { readdirSync, statSync } from 'node:fs'
 import { raw, getTemplatesDir, listBundled } from './cache.js'
 import { normalizeAccounts } from '../normalize.js'
 import { timeAgo } from '../utils.js'
@@ -7,9 +7,16 @@ import { hasPermission, type GoPageData as PageData } from '../../types/index.js
 // Auto-discover layouts/partials/components instead of hardcoding
 function discover(dir: string): string[] {
   try {
-    const fsList = readdirSync(`${getTemplatesDir()}/${dir}`)
-      .filter((f) => f.endsWith('.html'))
-      .map((f) => f.replace('.html', ''))
+    // Recursive so collections (e.g. components/forms) resolve as nested names.
+    const walk = (sub: string): string[] => {
+      const out: string[] = []
+      for (const e of readdirSync(`${getTemplatesDir()}/${dir}${sub}`)) {
+        if (statSync(`${getTemplatesDir()}/${dir}${sub}/${e}`).isDirectory()) out.push(...walk(`${sub}/${e}`))
+        else if (e.endsWith('.html')) out.push(`${sub ? sub.slice(1) + '/' : ''}${e.replace('.html', '')}`)
+      }
+      return out
+    }
+    const fsList = walk('')
     if (fsList.length > 0) return fsList
   } catch {}
   // Workers / fallback: use embedded bundledTemplates (fs unavailable in Workers)
@@ -1136,7 +1143,7 @@ function evalPageTemplate(page: string, data: PageData): string {
   html = html.replace(/\{\{template "content"[^}]*\}\}/g, content)
   // Components must inline AFTER the page content merge: calls live in
   // page bodies, and anything unprocessed here is stripped as unknown below.
-  for (const c of components.length ? components : ['badge', 'stat-card', 'empty-state']) {
+  for (const c of components.length ? components : ['display/badge', 'display/stat-card', 'display/empty-state']) {
     const re = new RegExp(`\\{\\{template "component/${c}"[^}]*\\}\\}`, 'g')
     let comp = raw(`components/${c}.html`)
     comp = comp.replace(/\{\{define "[^"]*"\}\}/, '')

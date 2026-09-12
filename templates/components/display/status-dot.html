@@ -1,0 +1,10 @@
+{{define "component/display/status-dot"}}
+{{/* Usage: {{template "component/display/status-dot" (dict "color" "green" "label" "Live")}} — colors: green amber gray red blue. */}}
+<span class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700">
+  <span class="w-2 h-2 rounded-full shrink-0
+    {{if eq .color "green"}}bg-green-500{{end}}
+    {{if eq .color "amber"}}bg-amber-400{{end}}
+    {{if eq .color "red"}}bg-red-500{{end}}
+    {{if eq .color "blue"}}bg-blue-500{{end}}
+    {{if not .color}}bg-gray-400{{end}}"></span>{{.label}}</span>
+{{end}}

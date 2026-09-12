@@ -1,5 +1,5 @@
-{{define "component/card"}}
-{{/* Usage: {{template "component/card" (dict "title" "Plan & usage" "desc" "Current limits" "body" "plain text body")}} — scalar body only; rich bodies stay inline. */}}
+{{define "component/display/card"}}
+{{/* Usage: {{template "component/display/card" (dict "title" "Plan & usage" "desc" "Current limits" "body" "plain text body")}} — scalar body only; rich bodies stay inline. */}}
 <div class="bg-card text-card-foreground rounded-lg border border-border">
   {{if .title}}<div class="px-5 py-4 border-b border-border">
     <p class="font-semibold">{{.title}}</p>

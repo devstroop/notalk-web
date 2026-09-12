@@ -82,58 +82,58 @@
   </div>
 
   <!-- Create Plan Modal -->
-  {{template "component/dialog-open" (dict "id" "createPlanModal" "xref" "createPlanModal" "title" "Create Plan")}}
+  {{template "component/overlays/dialog-open" (dict "id" "createPlanModal" "xref" "createPlanModal" "title" "Create Plan")}}
       <form method="POST" action="/admin/billing/plans" class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
-          {{template "component/input" (dict "label" "Plan ID" "name" "id" "placeholder" "auto-generated" "autocomplete" "off" "hint" "Optional.")}}
-          {{template "component/input" (dict "label" "Name" "name" "name" "required" "1" "autocomplete" "off")}}
+          {{template "component/forms/input" (dict "label" "Plan ID" "name" "id" "placeholder" "auto-generated" "autocomplete" "off" "hint" "Optional.")}}
+          {{template "component/forms/input" (dict "label" "Name" "name" "name" "required" "1" "autocomplete" "off")}}
         </div>
-        {{template "component/input" (dict "label" "Description" "name" "description" "autocomplete" "off")}}
+        {{template "component/forms/input" (dict "label" "Description" "name" "description" "autocomplete" "off")}}
         <div class="grid grid-cols-3 gap-4">
-          {{template "component/input" (dict "label" "Price (cents)" "name" "price_cents" "type" "number" "value" "0")}}
-          {{template "component/input" (dict "label" "Daily Messages" "name" "daily_messages" "type" "number" "value" "0" "placeholder" "0 = unlimited")}}
-          {{template "component/input" (dict "label" "Max Accounts" "name" "max_accounts" "type" "number" "value" "0" "placeholder" "0 = unlimited")}}
+          {{template "component/forms/input" (dict "label" "Price (cents)" "name" "price_cents" "type" "number" "value" "0")}}
+          {{template "component/forms/input" (dict "label" "Daily Messages" "name" "daily_messages" "type" "number" "value" "0" "placeholder" "0 = unlimited")}}
+          {{template "component/forms/input" (dict "label" "Max Accounts" "name" "max_accounts" "type" "number" "value" "0" "placeholder" "0 = unlimited")}}
         </div>
         <div class="flex flex-wrap gap-6">
-          {{template "component/checkbox" (dict "label" "API Access" "name" "api_access")}}
-          {{template "component/checkbox" (dict "label" "MCP Access" "name" "mcp_access")}}
-          {{template "component/checkbox" (dict "label" "Webhooks" "name" "webhooks")}}
-          {{template "component/checkbox" (dict "label" "Copilot" "name" "copilot")}}
-          {{template "component/checkbox" (dict "label" "Autopilot" "name" "autopilot")}}
-          {{template "component/checkbox" (dict "label" "Default Plan" "name" "is_default")}}
+          {{template "component/forms/checkbox" (dict "label" "API Access" "name" "api_access")}}
+          {{template "component/forms/checkbox" (dict "label" "MCP Access" "name" "mcp_access")}}
+          {{template "component/forms/checkbox" (dict "label" "Webhooks" "name" "webhooks")}}
+          {{template "component/forms/checkbox" (dict "label" "Copilot" "name" "copilot")}}
+          {{template "component/forms/checkbox" (dict "label" "Autopilot" "name" "autopilot")}}
+          {{template "component/forms/checkbox" (dict "label" "Default Plan" "name" "is_default")}}
         </div>
         <div class="flex justify-end gap-3 pt-2">
-          {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
-          {{template "component/button" (dict "text" "Create" "type" "submit")}}
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
+          {{template "component/forms/button" (dict "text" "Create" "type" "submit")}}
         </div>
       </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
 
   <!-- Edit Plan Modal -->
   <template x-if="editPlan">
-  {{template "component/dialog-open" (dict "id" "editPlanModal" "xref" "editPlanModal" "title" "Edit Plan")}}
+  {{template "component/overlays/dialog-open" (dict "id" "editPlanModal" "xref" "editPlanModal" "title" "Edit Plan")}}
       <form method="POST" :action="'/admin/billing/plans/' + editPlan.id + '/update'" class="space-y-4">
-        {{template "component/input" (dict "label" "Name" "name" "name" "required" "1" "xmodel" "editPlan.name" "autocomplete" "off")}}
-        {{template "component/input" (dict "label" "Description" "name" "description" "xmodel" "editPlan.description" "autocomplete" "off")}}
+        {{template "component/forms/input" (dict "label" "Name" "name" "name" "required" "1" "xmodel" "editPlan.name" "autocomplete" "off")}}
+        {{template "component/forms/input" (dict "label" "Description" "name" "description" "xmodel" "editPlan.description" "autocomplete" "off")}}
         <div class="grid grid-cols-3 gap-4">
-          {{template "component/input" (dict "label" "Price (cents)" "name" "price_cents" "type" "number" "xmodel" "editPlan.priceCents")}}
-          {{template "component/input" (dict "label" "Daily Messages" "name" "daily_messages" "type" "number" "xmodel" "editPlan.dailyMessages")}}
-          {{template "component/input" (dict "label" "Max Accounts" "name" "max_accounts" "type" "number" "xmodel" "editPlan.maxAccounts")}}
+          {{template "component/forms/input" (dict "label" "Price (cents)" "name" "price_cents" "type" "number" "xmodel" "editPlan.priceCents")}}
+          {{template "component/forms/input" (dict "label" "Daily Messages" "name" "daily_messages" "type" "number" "xmodel" "editPlan.dailyMessages")}}
+          {{template "component/forms/input" (dict "label" "Max Accounts" "name" "max_accounts" "type" "number" "xmodel" "editPlan.maxAccounts")}}
         </div>
         <div class="flex flex-wrap gap-6">
-          {{template "component/checkbox" (dict "label" "API Access" "name" "api_access" "xchecked" "editPlan.apiAccess")}}
-          {{template "component/checkbox" (dict "label" "MCP Access" "name" "mcp_access" "xchecked" "editPlan.mcpAccess")}}
-          {{template "component/checkbox" (dict "label" "Webhooks" "name" "webhooks" "xchecked" "editPlan.webhooks")}}
-          {{template "component/checkbox" (dict "label" "Copilot" "name" "copilot" "xchecked" "editPlan.copilot")}}
-          {{template "component/checkbox" (dict "label" "Autopilot" "name" "autopilot" "xchecked" "editPlan.autopilot")}}
-          {{template "component/checkbox" (dict "label" "Default Plan" "name" "is_default" "xchecked" "editPlan.isDefault")}}
+          {{template "component/forms/checkbox" (dict "label" "API Access" "name" "api_access" "xchecked" "editPlan.apiAccess")}}
+          {{template "component/forms/checkbox" (dict "label" "MCP Access" "name" "mcp_access" "xchecked" "editPlan.mcpAccess")}}
+          {{template "component/forms/checkbox" (dict "label" "Webhooks" "name" "webhooks" "xchecked" "editPlan.webhooks")}}
+          {{template "component/forms/checkbox" (dict "label" "Copilot" "name" "copilot" "xchecked" "editPlan.copilot")}}
+          {{template "component/forms/checkbox" (dict "label" "Autopilot" "name" "autopilot" "xchecked" "editPlan.autopilot")}}
+          {{template "component/forms/checkbox" (dict "label" "Default Plan" "name" "is_default" "xchecked" "editPlan.isDefault")}}
         </div>
         <div class="flex justify-end gap-3 pt-2">
-          {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "editPlan = null")}}
-          {{template "component/button" (dict "text" "Save Changes" "type" "submit")}}
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "editPlan = null")}}
+          {{template "component/forms/button" (dict "text" "Save Changes" "type" "submit")}}
         </div>
       </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
   </template>
 
 </div>

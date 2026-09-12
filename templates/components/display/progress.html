@@ -1,0 +1,6 @@
+{{define "component/display/progress"}}
+{{/* Usage: {{template "component/display/progress" (dict "percent" "45" "tone" "green")}} — tone: brand (default) green; percent 0-100, caller-clamped. */}}
+<div class="w-full bg-gray-200 rounded-full h-2" role="progressbar" aria-valuenow="{{.percent}}" aria-valuemin="0" aria-valuemax="100">
+  <div class="{{if eq .tone "green"}}bg-green-500{{else}}bg-brand-500{{end}} h-2 rounded-full transition-all" style="width:{{.percent}}%"></div>
+</div>
+{{end}}

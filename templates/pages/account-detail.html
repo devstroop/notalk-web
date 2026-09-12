@@ -60,7 +60,7 @@
     </div>
     <div class="flex items-center gap-3">
       <div id="session-badge" hx-get="/accounts/{{.Data.Account.ID}}/session-status" hx-trigger="load, every 2s" hx-swap="innerHTML">
-        {{template "component/badge" (dict "text" "Checking…" "color" "gray")}}
+        {{template "component/display/badge" (dict "text" "Checking…" "color" "gray")}}
       </div>
       <button @click="$refs.editAccountModal.showModal()"
               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
@@ -118,10 +118,10 @@
         <div class="text-sm px-3 py-2 rounded-md" :class="whMsg.startsWith('Error') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'" x-text="whMsg"></div>
       </template>
       <div class="space-y-4">
-        {{template "component/input" (dict "label" "URL" "name" "url" "type" "url" "xmodel" "whURL" "placeholder" "https://example.com/webhook")}}
-        {{template "component/input" (dict "label" "Secret" "name" "secret" "type" "password" "xmodel" "whSecret" "placeholder" "Leave empty to keep existing" "hint" "HMAC signing, optional.")}}
-        {{template "component/input" (dict "label" "Events" "name" "events" "xmodel" "whEvents" "placeholder" "message, receipt, presence" "hint" "Comma-separated, empty = all.")}}
-        {{template "component/checkbox" (dict "label" "Enabled" "name" "wh_enabled" "xchecked" "whEnabled")}}
+        {{template "component/forms/input" (dict "label" "URL" "name" "url" "type" "url" "xmodel" "whURL" "placeholder" "https://example.com/webhook")}}
+        {{template "component/forms/input" (dict "label" "Secret" "name" "secret" "type" "password" "xmodel" "whSecret" "placeholder" "Leave empty to keep existing" "hint" "HMAC signing, optional.")}}
+        {{template "component/forms/input" (dict "label" "Events" "name" "events" "xmodel" "whEvents" "placeholder" "message, receipt, presence" "hint" "Comma-separated, empty = all.")}}
+        {{template "component/forms/checkbox" (dict "label" "Enabled" "name" "wh_enabled" "xchecked" "whEnabled")}}
         <button @click="saveWH()" :disabled="whSaving || !whURL"
                 class="px-4 py-2 text-sm text-white bg-brand-500 rounded-md hover:bg-brand-600 disabled:opacity-50 transition-colors">
           <span x-text="whSaving ? 'Saving…' : 'Save Webhook'"></span>
@@ -151,7 +151,7 @@
               <option value="socks5">SOCKS5</option>
             </select>
           </div>
-          {{template "component/input" (dict "label" "Host" "name" "host" "xmodel" "pxHost" "placeholder" "proxy.example.com")}}
+          {{template "component/forms/input" (dict "label" "Host" "name" "host" "xmodel" "pxHost" "placeholder" "proxy.example.com")}}
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Port</label>
             <input type="number" x-model.number="pxPort" min="1" max="65535"
@@ -159,10 +159,10 @@
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
-          {{template "component/input" (dict "label" "Username" "name" "username" "xmodel" "pxUser" "placeholder" "username" "hint" "Optional.")}}
-          {{template "component/input" (dict "label" "Password" "name" "password" "type" "password" "xmodel" "pxPass" "placeholder" "Leave empty to keep existing" "hint" "Optional.")}}
+          {{template "component/forms/input" (dict "label" "Username" "name" "username" "xmodel" "pxUser" "placeholder" "username" "hint" "Optional.")}}
+          {{template "component/forms/input" (dict "label" "Password" "name" "password" "type" "password" "xmodel" "pxPass" "placeholder" "Leave empty to keep existing" "hint" "Optional.")}}
         </div>
-        {{template "component/checkbox" (dict "label" "Enabled" "name" "px_enabled" "xchecked" "pxEnabled")}}
+        {{template "component/forms/checkbox" (dict "label" "Enabled" "name" "px_enabled" "xchecked" "pxEnabled")}}
         <button @click="savePX()" :disabled="pxSaving || !pxHost"
                 class="px-4 py-2 text-sm text-white bg-brand-500 rounded-md hover:bg-brand-600 disabled:opacity-50 transition-colors">
           <span x-text="pxSaving ? 'Saving…' : 'Save Proxy'"></span>
@@ -172,26 +172,26 @@
   </div>
 
   <!-- Edit Account Modal -->
-  {{template "component/dialog-open" (dict "id" "editAccountModal" "xref" "editAccountModal" "title" "Edit Account")}}
+  {{template "component/overlays/dialog-open" (dict "id" "editAccountModal" "xref" "editAccountModal" "title" "Edit Account")}}
       <form method="POST" action="/accounts/{{.Data.Account.ID}}/update" class="space-y-4">
-          {{template "component/input" (dict "label" "Account Name" "name" "account_name" "xmodel" "editName" "required" "1")}}
-          {{template "component/input" (dict "label" "Phone Number" "name" "phone_number" "xmodel" "editPhone" "required" "1" "autocomplete" "off")}}
+          {{template "component/forms/input" (dict "label" "Account Name" "name" "account_name" "xmodel" "editName" "required" "1")}}
+          {{template "component/forms/input" (dict "label" "Phone Number" "name" "phone_number" "xmodel" "editPhone" "required" "1" "autocomplete" "off")}}
         <div class="flex justify-end gap-3 pt-2">
-          {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
-          {{template "component/button" (dict "text" "Save" "type" "submit")}}
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
+          {{template "component/forms/button" (dict "text" "Save" "type" "submit")}}
         </div>
       </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
 
   <!-- Delete Account Modal -->
-  {{template "component/dialog-open" (dict "id" "deleteAccountModal" "xref" "deleteAccountModal" "title" "Delete Account")}}
+  {{template "component/overlays/dialog-open" (dict "id" "deleteAccountModal" "xref" "deleteAccountModal" "title" "Delete Account")}}
       <p class="text-sm text-gray-600">Are you sure you want to delete <strong>{{.Data.Account.AccountName}}</strong>? This will remove all session data.</p>
       <div class="flex justify-end gap-3 pt-4">
-        {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
+        {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
         <form method="POST" action="/accounts/{{.Data.Account.ID}}/delete">
-          {{template "component/button" (dict "text" "Delete" "variant" "destructive" "type" "submit")}}
+          {{template "component/forms/button" (dict "text" "Delete" "variant" "destructive" "type" "submit")}}
         </form>
       </div>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
 </div>
 {{end}}

@@ -76,11 +76,11 @@
   </div>
 
   <!-- Create User Modal -->
-  {{template "component/dialog-open" (dict "id" "createUserModal" "xref" "createUserModal" "title" "Create User")}}
+  {{template "component/overlays/dialog-open" (dict "id" "createUserModal" "xref" "createUserModal" "title" "Create User")}}
       <form method="POST" action="/admin/users" class="space-y-4">
-        {{template "component/input" (dict "label" "Username" "name" "username" "required" "1" "autocomplete" "off")}}
-        {{template "component/input" (dict "label" "Email" "name" "email" "type" "email" "autocomplete" "off" "hint" "Optional.")}}
-        {{template "component/input" (dict "label" "Password" "name" "password" "type" "password" "required" "1" "minlength" "8" "autocomplete" "new-password")}}
+        {{template "component/forms/input" (dict "label" "Username" "name" "username" "required" "1" "autocomplete" "off")}}
+        {{template "component/forms/input" (dict "label" "Email" "name" "email" "type" "email" "autocomplete" "off" "hint" "Optional.")}}
+        {{template "component/forms/input" (dict "label" "Password" "name" "password" "type" "password" "required" "1" "minlength" "8" "autocomplete" "new-password")}}
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
           <select name="role_id" required
@@ -91,18 +91,18 @@
           </select>
         </div>
         <div class="flex justify-end gap-3 pt-2">
-          {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
-          {{template "component/button" (dict "text" "Create" "type" "submit")}}
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
+          {{template "component/forms/button" (dict "text" "Create" "type" "submit")}}
         </div>
       </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
 
   <!-- Edit User Modal -->
   <template x-if="editUser">
-  {{template "component/dialog-open" (dict "id" "editUserModal" "xref" "editUserModal" "title" "Edit User")}}
+  {{template "component/overlays/dialog-open" (dict "id" "editUserModal" "xref" "editUserModal" "title" "Edit User")}}
       <form method="POST" :action="'/admin/users/' + editUser.id + '/update'" class="space-y-4">
-        {{template "component/input" (dict "label" "Username" "name" "username" "required" "1" "xmodel" "editUser.username" "autocomplete" "off")}}
-        {{template "component/input" (dict "label" "Email" "name" "email" "type" "email" "xmodel" "editUser.email" "autocomplete" "off")}}
+        {{template "component/forms/input" (dict "label" "Username" "name" "username" "required" "1" "xmodel" "editUser.username" "autocomplete" "off")}}
+        {{template "component/forms/input" (dict "label" "Email" "name" "email" "type" "email" "xmodel" "editUser.email" "autocomplete" "off")}}
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
           <select name="role_id" x-model="editUser.roleID"
@@ -112,26 +112,26 @@
             {{end}}
           </select>
         </div>
-        {{template "component/checkbox" (dict "label" "Enabled" "name" "enabled" "xchecked" "editUser.enabled")}}
+        {{template "component/forms/checkbox" (dict "label" "Enabled" "name" "enabled" "xchecked" "editUser.enabled")}}
         <div class="flex justify-end gap-3 pt-2">
-          {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "editUser = null")}}
-          {{template "component/button" (dict "text" "Save" "type" "submit")}}
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "editUser = null")}}
+          {{template "component/forms/button" (dict "text" "Save" "type" "submit")}}
         </div>
       </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
   </template>
 
   <!-- Reset Password Modal -->
-  {{template "component/dialog-open" (dict "id" "resetModal" "xref" "resetModal" "title" "Reset Password")}}
+  {{template "component/overlays/dialog-open" (dict "id" "resetModal" "xref" "resetModal" "title" "Reset Password")}}
       <p class="text-sm text-gray-500">Set a new password for <strong x-text="resetUser?.username"></strong>.</p>
       <form method="POST" :action="'/admin/users/' + resetUser?.id + '/reset-password'" class="space-y-4">
-        {{template "component/input" (dict "label" "New Password" "name" "new_password" "type" "password" "required" "1" "minlength" "8" "autocomplete" "new-password")}}
+        {{template "component/forms/input" (dict "label" "New Password" "name" "new_password" "type" "password" "required" "1" "minlength" "8" "autocomplete" "new-password")}}
         <div class="flex justify-end gap-3 pt-2">
-          {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "resetUser = null")}}
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "resetUser = null")}}
           <button type="submit"
             class="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-md hover:bg-amber-700 transition-colors">Reset</button>
         </div>
       </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
 </div>
 {{end}}

@@ -35,9 +35,9 @@
             <td class="px-5 py-3 text-gray-500">{{.PhoneNumber}}</td>
             <td class="px-5 py-3">
               {{if .Connected}}
-                {{template "component/badge" (dict "text" "Connected" "color" "green")}}
+                {{template "component/display/badge" (dict "text" "Connected" "color" "green")}}
               {{else}}
-                {{template "component/badge" (dict "text" "Disconnected" "color" "gray")}}
+                {{template "component/display/badge" (dict "text" "Disconnected" "color" "gray")}}
               {{end}}
             </td>
             <td class="px-5 py-3 text-gray-500">{{timeAgo .CreatedAt}}</td>
@@ -54,7 +54,7 @@
           {{else}}
           <tr>
             <td colspan="5">
-              {{template "component/empty-state" (dict "title" "No accounts" "description" "Create a WhatsApp account to get started." "action" "" "actionLabel" "")}}
+              {{template "component/display/empty-state" (dict "title" "No accounts" "description" "Create a WhatsApp account to get started." "action" "" "actionLabel" "")}}
             </td>
           </tr>
           {{end}}
@@ -64,16 +64,16 @@
   </div>
 
   <!-- Create modal -->
-  {{template "component/dialog-open" (dict "id" "createModal" "xref" "createModal" "title" "Create Account")}}
+  {{template "component/overlays/dialog-open" (dict "id" "createModal" "xref" "createModal" "title" "Create Account")}}
     <form method="POST" action="/accounts" hx-post="/accounts" hx-target="#account-list" hx-swap="outerHTML"
           @htmx:after-request="if(event.detail.successful) $refs.createModal.close()" class="space-y-4">
-      {{template "component/input" (dict "label" "Account Name" "name" "account_name" "required" "1" "placeholder" "e.g. Sales, Support")}}
-      {{template "component/input" (dict "label" "Phone Number" "name" "phone_number" "required" "1" "placeholder" "e.g. +919876543210")}}
+      {{template "component/forms/input" (dict "label" "Account Name" "name" "account_name" "required" "1" "placeholder" "e.g. Sales, Support")}}
+      {{template "component/forms/input" (dict "label" "Phone Number" "name" "phone_number" "required" "1" "placeholder" "e.g. +919876543210")}}
       <div class="flex justify-end gap-3 pt-2">
-        {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
-        {{template "component/button" (dict "text" "Create" "type" "submit")}}
+        {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
+        {{template "component/forms/button" (dict "text" "Create" "type" "submit")}}
       </div>
     </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
 </div>
 {{end}}

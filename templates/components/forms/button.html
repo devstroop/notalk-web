@@ -1,5 +1,5 @@
-{{define "component/button"}}
-{{/* Usage: {{template "component/button" (dict "text" "Save" "variant" "primary" "size" "default")}} — variants: primary secondary outline ghost destructive; sizes: sm default; add "href" "/path" to render a link, "type" "submit" for form buttons. */}}
+{{define "component/forms/button"}}
+{{/* Usage: {{template "component/forms/button" (dict "text" "Save" "variant" "primary" "size" "default")}} — variants: primary secondary outline ghost destructive; sizes: sm default; add "href" "/path" to render a link, "type" "submit" for form buttons. */}}
 {{if .href}}<a href="{{.href}}" class="inline-flex items-center justify-center gap-2 rounded-md{{if .block}} w-full{{end}} text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none
       {{if eq .size "sm"}}px-3 py-1.5{{else}}px-4 py-2{{end}}
       {{if eq .variant "secondary"}}bg-secondary text-secondary-foreground hover:bg-accent{{end}}

@@ -147,14 +147,14 @@
   </div>
 
   <!-- Create Contact Modal — lean with groups -->
-  {{template "component/dialog-open" (dict "id" "createContactModal" "xref" "createContactModal" "title" "New Contact" "desc" "Lean — only ID is required (hidden). Phone/email optional.")}}
+  {{template "component/overlays/dialog-open" (dict "id" "createContactModal" "xref" "createContactModal" "title" "New Contact" "desc" "Lean — only ID is required (hidden). Phone/email optional.")}}
       <form method="POST" action="/contacts" class="space-y-4">
-        {{template "component/input" (dict "label" "Name" "name" "name" "placeholder" "Jane Doe")}}
+        {{template "component/forms/input" (dict "label" "Name" "name" "name" "placeholder" "Jane Doe")}}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {{template "component/input" (dict "label" "Phone" "name" "phone" "type" "tel" "placeholder" "+919876543210")}}
-          {{template "component/input" (dict "label" "Email" "name" "email" "type" "email" "placeholder" "jane@example.com")}}
+          {{template "component/forms/input" (dict "label" "Phone" "name" "phone" "type" "tel" "placeholder" "+919876543210")}}
+          {{template "component/forms/input" (dict "label" "Email" "name" "email" "type" "email" "placeholder" "jane@example.com")}}
         </div>
-        {{template "component/input" (dict "label" "Company" "name" "company" "placeholder" "Acme Inc.")}}
+        {{template "component/forms/input" (dict "label" "Company" "name" "company" "placeholder" "Acme Inc.")}}
         {{if .Data.Groups}}
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1">Groups</label>
@@ -169,27 +169,27 @@
           </div>
         </div>
         {{end}}
-        {{template "component/input" (dict "label" "Tags" "name" "tags" "placeholder" "vip, customer" "hint" "Comma-separated, optional.")}}
-        {{template "component/checkbox" (dict "label" "Starred" "name" "starred")}}
-        {{template "component/textarea" (dict "label" "Notes" "name" "notes" "rows" "2" "placeholder" "VIP, prefers email…")}}
+        {{template "component/forms/input" (dict "label" "Tags" "name" "tags" "placeholder" "vip, customer" "hint" "Comma-separated, optional.")}}
+        {{template "component/forms/checkbox" (dict "label" "Starred" "name" "starred")}}
+        {{template "component/forms/textarea" (dict "label" "Notes" "name" "notes" "rows" "2" "placeholder" "VIP, prefers email…")}}
         <div class="flex justify-end gap-3 pt-2 pb-2">
-          {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
-          {{template "component/button" (dict "text" "Create" "type" "submit")}}
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
+          {{template "component/forms/button" (dict "text" "Create" "type" "submit")}}
         </div>
       </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
 
   <!-- Edit Contact Modal — lean with groups -->
   <template x-if="editContact">
-  {{template "component/dialog-open" (dict "id" "editContactModal" "xref" "editContactModal" "title" "Edit Contact")}}
+  {{template "component/overlays/dialog-open" (dict "id" "editContactModal" "xref" "editContactModal" "title" "Edit Contact")}}
       <form method="POST" :action="'/contacts/' + editContact.id + '/update'" class="space-y-4">
         <p class="text-xs text-gray-400">ID <span class="font-mono" x-text="editContact.id"></span> — hidden, immutable</p>
-        {{template "component/input" (dict "label" "Name" "name" "name" "xmodel" "editContact.name")}}
+        {{template "component/forms/input" (dict "label" "Name" "name" "name" "xmodel" "editContact.name")}}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {{template "component/input" (dict "label" "Phone" "name" "phone" "type" "tel" "xmodel" "editContact.phone")}}
-          {{template "component/input" (dict "label" "Email" "name" "email" "type" "email" "xmodel" "editContact.email")}}
+          {{template "component/forms/input" (dict "label" "Phone" "name" "phone" "type" "tel" "xmodel" "editContact.phone")}}
+          {{template "component/forms/input" (dict "label" "Email" "name" "email" "type" "email" "xmodel" "editContact.email")}}
         </div>
-        {{template "component/input" (dict "label" "Company" "name" "company" "xmodel" "editContact.company")}}
+        {{template "component/forms/input" (dict "label" "Company" "name" "company" "xmodel" "editContact.company")}}
         <!-- Groups checkboxes -->
         {{if .Data.Groups}}
         <div>
@@ -209,61 +209,61 @@
           </template>
         </div>
         {{end}}
-        {{template "component/input" (dict "label" "Tags" "name" "tags" "placeholder" "vip, customer" "xmodel" "editContact.tags")}}
-        {{template "component/checkbox" (dict "label" "Starred" "name" "starred" "xchecked" "editContact.starred")}}
-        {{template "component/textarea" (dict "label" "Notes" "name" "notes" "rows" "2" "xmodel" "editContact.notes")}}
+        {{template "component/forms/input" (dict "label" "Tags" "name" "tags" "placeholder" "vip, customer" "xmodel" "editContact.tags")}}
+        {{template "component/forms/checkbox" (dict "label" "Starred" "name" "starred" "xchecked" "editContact.starred")}}
+        {{template "component/forms/textarea" (dict "label" "Notes" "name" "notes" "rows" "2" "xmodel" "editContact.notes")}}
         <div class="flex justify-end gap-3 pt-2 pb-2">
-          {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "editContact = null")}}
-          {{template "component/button" (dict "text" "Save" "type" "submit")}}
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "editContact = null")}}
+          {{template "component/forms/button" (dict "text" "Save" "type" "submit")}}
         </div>
       </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
   </template>
 
   <!-- Delete Contact Confirm -->
-  {{template "component/dialog-open" (dict "id" "deleteContactModal" "xref" "deleteContactModal" "title" "Delete contact?")}}
+  {{template "component/overlays/dialog-open" (dict "id" "deleteContactModal" "xref" "deleteContactModal" "title" "Delete contact?")}}
       <p class="text-sm text-gray-500">Delete <strong x-text="deleteContact?.name || deleteContact?.id"></strong>. This cannot be undone.</p>
       <form method="POST" :action="'/contacts/' + deleteContact?.id + '/delete'" class="flex justify-end gap-3 pt-2">
-        {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "deleteContact = null")}}
-        {{template "component/button" (dict "text" "Delete" "type" "submit" "variant" "destructive")}}
+        {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "deleteContact = null")}}
+        {{template "component/forms/button" (dict "text" "Delete" "type" "submit" "variant" "destructive")}}
       </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
 
   <!-- Create Group Modal -->
-  {{template "component/dialog-open" (dict "id" "createGroupModal" "xref" "createGroupModal" "title" "New Group")}}
+  {{template "component/overlays/dialog-open" (dict "id" "createGroupModal" "xref" "createGroupModal" "title" "New Group")}}
       <form method="POST" action="/contact-groups" class="space-y-4">
-        {{template "component/input" (dict "label" "Name" "name" "name" "required" "1" "placeholder" "VIP, Leads…")}}
-        {{template "component/input" (dict "label" "Description" "name" "description" "placeholder" "High value customers")}}
+        {{template "component/forms/input" (dict "label" "Name" "name" "name" "required" "1" "placeholder" "VIP, Leads…")}}
+        {{template "component/forms/input" (dict "label" "Description" "name" "description" "placeholder" "High value customers")}}
         <div><label class="block text-xs font-medium text-gray-600 mb-1">Color</label><input type="color" name="color" value="#6b7280" class="w-16 h-8 rounded border border-gray-300 p-1"></div>
         <div class="flex justify-end gap-3">
-          {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
-          {{template "component/button" (dict "text" "Create" "type" "submit")}}
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
+          {{template "component/forms/button" (dict "text" "Create" "type" "submit")}}
         </div>
       </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
 
   <!-- Edit Group Modal -->
   <template x-if="editGroup">
-  {{template "component/dialog-open" (dict "id" "editGroupModal" "xref" "editGroupModal" "title" "Edit Group")}}
+  {{template "component/overlays/dialog-open" (dict "id" "editGroupModal" "xref" "editGroupModal" "title" "Edit Group")}}
       <form method="POST" :action="'/contact-groups/' + editGroup.id + '/update'" class="space-y-4">
-        {{template "component/input" (dict "label" "Name" "name" "name" "required" "1" "xmodel" "editGroup.name")}}
-        {{template "component/input" (dict "label" "Description" "name" "description" "xmodel" "editGroup.description")}}
+        {{template "component/forms/input" (dict "label" "Name" "name" "name" "required" "1" "xmodel" "editGroup.name")}}
+        {{template "component/forms/input" (dict "label" "Description" "name" "description" "xmodel" "editGroup.description")}}
         <div><label class="block text-xs font-medium text-gray-600 mb-1">Color</label><input type="color" name="color" x-model="editGroup.color" class="w-full h-8 rounded border border-gray-300 p-1"></div>
         <div class="flex justify-end gap-3">
-          {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "editGroup = null")}}
-          {{template "component/button" (dict "text" "Save" "type" "submit")}}
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "editGroup = null")}}
+          {{template "component/forms/button" (dict "text" "Save" "type" "submit")}}
         </div>
       </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
   </template>
 
   <!-- Delete Group Confirm -->
-  {{template "component/dialog-open" (dict "id" "deleteGroupModal" "xref" "deleteGroupModal" "title" "Delete group?")}}
+  {{template "component/overlays/dialog-open" (dict "id" "deleteGroupModal" "xref" "deleteGroupModal" "title" "Delete group?")}}
       <p class="text-sm text-gray-500">Delete group <strong x-text="deleteGroup?.name"></strong>? Contacts will remain, only the group label is removed.</p>
       <form method="POST" :action="'/contact-groups/' + deleteGroup?.id + '/delete'" class="flex justify-end gap-3 pt-2">
-        {{template "component/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "deleteGroup = null")}}
-        {{template "component/button" (dict "text" "Delete" "type" "submit" "variant" "destructive")}}
+        {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "deleteGroup = null")}}
+        {{template "component/forms/button" (dict "text" "Delete" "type" "submit" "variant" "destructive")}}
       </form>
-  {{template "component/dialog-close"}}
+  {{template "component/overlays/dialog-close"}}
 </div>
 {{end}}

@@ -32,6 +32,21 @@ document.addEventListener('DOMContentLoaded', function() {
       if (dlg) dlg.close();
     }
   });
+  // ── Copy-to-clipboard delegation (component/feedback/copy-button) ──
+  // Value travels in data-copy (quote-safe); label flips to Copied! briefly.
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-copy]') : null;
+    if (!b || !navigator.clipboard) return;
+    var done = function () {
+      var label = b.querySelector('span:last-child');
+      if (!label) return;
+      var orig = label.textContent;
+      label.textContent = 'Copied!';
+      setTimeout(function () { label.textContent = orig; }, 1500);
+    };
+    navigator.clipboard.writeText(b.getAttribute('data-copy') || '').then(done, done);
+  });
+
   document.querySelectorAll('dialog[data-close-on-backdrop="true"]').forEach(function (d) {
     d.addEventListener('click', function (e) { if (e.target === d) d.close(); });
   });

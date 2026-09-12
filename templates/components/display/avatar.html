@@ -1,0 +1,7 @@
+{{define "component/display/avatar"}}
+{{/* Usage: {{template "component/display/avatar" (dict "initial" "S" "label" "Sales" "size" "md")}} — sizes: sm (w-6) md (w-8) lg (w-10); pass initial explicitly (engine has no string ops). */}}
+<span{{if .label}} title="{{.label}}"{{end}} class="rounded-full flex items-center justify-center font-semibold shrink-0 bg-gray-100 text-gray-600
+  {{if eq .size "sm"}}w-6 h-6 text-[10px]{{end}}
+  {{if eq .size "lg"}}w-10 h-10 text-sm{{end}}
+  {{if not .size}}w-8 h-8 text-xs{{end}}">{{.initial}}</span>
+{{end}}
