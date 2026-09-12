@@ -8,35 +8,24 @@ export function registerDashboardRoutes(app: Hono): void {
     const identity = getIdentity(c)!
     const token = getToken(c)!
     const flash = getFlash(c)
-    let channels: any[] = []
+    let accounts: any[] = []
     let totalUsers = 0
     let backendDown = false
     try {
-      const { data } = await backend.json('GET', '/api/v1/channels', token)
-      channels = Array.isArray(data) ? data : (data?.channels ?? data?.accounts ?? [])
+      const { data } = await backend.json('GET', '/api/v1/accounts', token)
+      accounts = Array.isArray(data) ? data : (data?.accounts ?? [])
     } catch {
-      // Fallback to legacy accounts
-      try {
-        const { data } = await backend.json('GET', '/api/v1/accounts', token)
-        channels = Array.isArray(data) ? data : (data?.accounts ?? [])
-      } catch {
-        backendDown = true
-        channels = []
-      }
+      backendDown = true
+      accounts = []
     }
-    const rows = channels.map((a: any) => ({
+    const rows = accounts.map((a: any) => ({
       id: a.id,
-      accountName: a.account_name ?? a.name ?? a.AccountName ?? '',
-      phoneNumber: a.phone_number ?? a.identifier ?? a.PhoneNumber ?? a.Identifier ?? '',
-      type: a.type ?? a.Type ?? 'whatsapp',
+      accountName: a.account_name ?? a.accountName ?? '',
+      phoneNumber: a.phone_number ?? a.phoneNumber ?? '',
       connected: a.status?.connected ?? a.connected ?? a.authorized ?? a.Authorized ?? false,
       createdAt: a.created_at ?? a.createdAt ?? new Date().toISOString(),
     }))
     const connected = rows.filter((r) => r.connected).length
-    const byType = rows.reduce((acc: any, r: any) => {
-      acc[r.type] = (acc[r.type] || 0) + 1
-      return acc
-    }, {})
     try {
       const { status: us, data: udata } = await backend.json('GET', '/api/v1/users', token)
       if (us === 200) totalUsers = Array.isArray(udata) ? udata.length : (udata?.users?.length ?? udata?.total ?? 0)
@@ -52,17 +41,14 @@ export function registerDashboardRoutes(app: Hono): void {
         Identity: identity,
         Flash: flash ? { Type: flash.Type, Message: flash.Message } : null,
         Data: {
-          TotalAccounts: channels.length,
-          TotalChannels: channels.length,
+          TotalAccounts: accounts.length,
           Connected: connected,
-          Disconnected: channels.length - connected,
+          Disconnected: accounts.length - connected,
           TotalUsers: totalUsers,
-          ByType: byType,
           Accounts: rows.slice(0, 5).map((r) => ({
             ID: r.id,
             AccountName: r.accountName,
             PhoneNumber: r.phoneNumber,
-            Type: r.type,
             Connected: r.connected,
             CreatedAt: r.createdAt,
           })),

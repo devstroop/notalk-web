@@ -44,8 +44,6 @@ const pageLayout: Record<string, string> = {
   dashboard: 'base',
   accounts: 'base',
   'account-detail': 'base',
-  channels: 'base',
-  'channel-detail': 'base',
   users: 'base',
   roles: 'base',
   'api-keys': 'base',
@@ -399,54 +397,6 @@ function evalPageTemplate(page: string, data: PageData): string {
     }
     content = content.replace(/<tbody class="divide-y divide-gray-50">[\s\S]*?<\/tbody>/, `<tbody class="divide-y divide-gray-50">${rowsHtml}</tbody>`)
     content = content.replace(/\{\{[^}]+\}\}/g, (m) => (m.includes('hx-') || m.includes('x-') ? m : ''))
-  } else if (page === 'channels') {
-    // Platform channels — agnostic, show type badge and identifier, fallback to Accounts for compat
-    const channelsRaw: any[] = Array.isArray((data.Data as any)?.Channels) ? (data.Data as any).Channels : (Array.isArray((data.Data as any)?.channels) ? (data.Data as any).channels : (data.Data?.Accounts ?? []))
-    // Normalize like accounts but keep Type
-    const channels = channelsRaw.map((c: any) => ({
-      ID: c.ID ?? c.id ?? '',
-      AccountName: c.AccountName ?? c.account_name ?? c.Name ?? c.name ?? '',
-      PhoneNumber: c.PhoneNumber ?? c.phone_number ?? c.Identifier ?? c.identifier ?? '',
-      Type: c.Type ?? c.type ?? 'whatsapp',
-      Identifier: c.Identifier ?? c.identifier ?? c.PhoneNumber ?? c.phone_number ?? '',
-      Connected: c.Connected ?? c.connected ?? c.status?.connected ?? false,
-      CreatedAt: c.CreatedAt ?? c.created_at ?? '',
-    }))
-    let rowsHtml = ''
-    if (channels.length === 0) {
-      rowsHtml = `<tr><td colspan="6"><div class="px-5 py-12 text-center"><p class="text-sm text-gray-500">No channels yet.</p><a href="/channels" class="mt-3 inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-brand-600">Create channel</a></div></td></tr>`
-    } else {
-      rowsHtml = channels
-        .map(
-          (a) => `
-          <tr class="hover:bg-gray-50 transition-colors">
-            <td class="px-5 py-3"><a href="/channels/${escAttr(a.ID)}" class="font-medium text-gray-900 hover:text-brand-800">${esc(a.AccountName)}</a><div class="text-xs text-gray-400">${esc(a.ID)}</div></td>
-            <td class="px-5 py-3">${a.Type === 'email' ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Email</span>` : `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">WhatsApp</span>`}</td>
-            <td class="px-5 py-3 font-mono text-gray-600">${esc(a.Identifier || a.PhoneNumber)}</td>
-            <td class="px-5 py-3">${a.Connected ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Connected</span>` : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Disconnected</span>`}</td>
-            <td class="px-5 py-3 text-gray-500">${esc(timeAgo(a.CreatedAt))}</td>
-            <td class="px-5 py-3 text-right"><a href="/channels/${escAttr(a.ID)}" class="text-brand-800 text-sm font-medium">Manage →</a></td>
-          </tr>`
-        )
-        .join('')
-    }
-    content = content.replace(/<tbody class="divide-y divide-gray-50">[\s\S]*?<\/tbody>/, `<tbody class="divide-y divide-gray-50">${rowsHtml}</tbody>`)
-    // Handle filter tabs active state (simple)
-    content = content.replace(/\{\{[^}]+\}\}/g, (m) => (m.includes('hx-') || m.includes('x-') ? m : ''))
-  } else if (page === 'channel-detail') {
-    // Reuse account-detail rendering but with Channel data — fallback to Account for compat
-    const ch: any = (data.Data as any)?.Channel ?? (data.Data as any)?.channel ?? (data.Data as any)?.Account ?? {}
-    const name = ch.Name ?? ch.AccountName ?? ch.account_name ?? ''
-    const ident = ch.Identifier ?? ch.identifier ?? ch.PhoneNumber ?? ch.phone_number ?? ''
-    const type = ch.Type ?? ch.type ?? 'whatsapp'
-    content = content.replace(/\{\{\.Data\.Channel\.Name\}\}/g, esc(name))
-    content = content.replace(/\{\{\.Data\.Channel\.Identifier\}\}/g, esc(ident))
-    content = content.replace(/\{\{\.Data\.Channel\.ID\}\}/g, escAttr(String(ch.ID ?? ch.id ?? '')))
-    content = content.replace(/\{\{\.Data\.Channel\.Type\}\}/g, esc(String(type)))
-    // Fallback for Account placeholders
-    content = content.replace(/\{\{\.Data\.Account\.AccountName\}\}/g, esc(name))
-    content = content.replace(/\{\{\.Data\.Account\.PhoneNumber\}\}/g, esc(ident))
-    content = content.replace(/\{\{\.Data\.Account\.ID\}\}/g, escAttr(String(ch.ID ?? ch.id ?? '')))
   } else if (page === 'dashboard') {
     const accounts = normalizeAccounts(data.Data?.Accounts ?? [])
     let recentHtml = ''

@@ -5,9 +5,6 @@ import { registerDashboardRoutes } from './routes/dashboard.js'
 import { registerAccountsListRoutes } from './routes/accounts/list.js'
 import { registerAccountsDetailRoutes } from './routes/accounts/detail.js'
 import { registerAccountsFragments } from './routes/accounts/fragments.js'
-import { registerChannelsListRoutes } from './routes/channels/list.js'
-import { registerChannelsDetailRoutes } from './routes/channels/detail.js'
-import { registerChannelsFragments } from './routes/channels/fragments.js'
 import { registerWhatsappRoutes } from './routes/whatsapp.js'
 import { registerAiSettingsRoutes } from './routes/settings/ai.js'
 import { registerAssistantRoutes } from './routes/assistant.js'
@@ -39,9 +36,6 @@ const app = (() => {
   registerAccountsListRoutes(a)
   registerAccountsDetailRoutes(a)
   registerAccountsFragments(a)
-  registerChannelsListRoutes(a)
-  registerChannelsDetailRoutes(a)
-  registerChannelsFragments(a)
   registerWhatsappRoutes(a)
   registerAssistantRoutes(a)
   registerAiSettingsRoutes(a)
