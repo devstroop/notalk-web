@@ -1,16 +1,16 @@
 {{define "component/button"}}
 {{/* Usage: {{template "component/button" (dict "text" "Save" "variant" "primary" "size" "default")}} — variants: primary secondary outline ghost destructive; sizes: sm default; add "href" "/path" to render a link, "type" "submit" for form buttons. */}}
-{{if .href}}<a href="{{.href}}" class="inline-flex items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none
+{{if .href}}<a href="{{.href}}" class="inline-flex items-center justify-center gap-2 rounded-lg{{if .block}} w-full{{end}} text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none
       {{if eq .size "sm"}}px-3 py-1.5{{else}}px-4 py-2{{end}}
       {{if eq .variant "secondary"}}bg-secondary text-secondary-foreground hover:bg-accent{{end}}
       {{if eq .variant "outline"}}border border-input bg-background hover:bg-accent{{end}}
       {{if eq .variant "ghost"}}hover:bg-accent text-foreground{{end}}
       {{if eq .variant "destructive"}}bg-destructive text-destructive-foreground hover:bg-destructive/90{{end}}
-      {{if not .variant}}bg-primary text-primary-foreground hover:bg-brand-600{{end}}">{{.text}}</a>{{else}}<button{{if .type}} type="{{.type}}"{{else}} type="button"{{end}} class="inline-flex items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none
+      {{if not .variant}}bg-primary text-primary-foreground hover:bg-brand-600{{end}}{{if .loading}} btn-loading{{end}}">{{.text}}</a>{{else}}<button{{if .type}} type="{{.type}}"{{else}} type="button"{{end}} class="inline-flex items-center justify-center gap-2 rounded-lg{{if .block}} w-full{{end}} text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none
       {{if eq .size "sm"}}px-3 py-1.5{{else}}px-4 py-2{{end}}
       {{if eq .variant "secondary"}}bg-secondary text-secondary-foreground hover:bg-accent{{end}}
       {{if eq .variant "outline"}}border border-input bg-background hover:bg-accent{{end}}
       {{if eq .variant "ghost"}}hover:bg-accent text-foreground{{end}}
       {{if eq .variant "destructive"}}bg-destructive text-destructive-foreground hover:bg-destructive/90{{end}}
-      {{if not .variant}}bg-primary text-primary-foreground hover:bg-brand-600{{end}}">{{.text}}</button>{{end}}
+      {{if not .variant}}bg-primary text-primary-foreground hover:bg-brand-600{{end}}{{if .loading}} btn-loading{{end}}">{{if .loading}}<svg class="btn-spinner hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>{{end}}{{.text}}</button>{{end}}
 {{end}}
