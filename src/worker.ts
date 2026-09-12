@@ -4,6 +4,7 @@ import { registerAuthRoutes } from './routes/auth.js'
 import { registerDashboardRoutes } from './routes/dashboard.js'
 import { registerAccountsListRoutes } from './routes/accounts/list.js'
 import { registerAccountsDetailRoutes } from './routes/accounts/detail.js'
+import { registerAccountsChatRoutes } from './routes/accounts/chat.js'
 import { registerAccountsFragments } from './routes/accounts/fragments.js'
 import { registerWhatsappRoutes } from './routes/whatsapp.js'
 import { registerAiSettingsRoutes } from './routes/settings/ai.js'
@@ -35,6 +36,7 @@ const app = (() => {
   registerDashboardRoutes(a)
   registerAccountsListRoutes(a)
   registerAccountsDetailRoutes(a)
+  registerAccountsChatRoutes(a)
   registerAccountsFragments(a)
   registerWhatsappRoutes(a)
   registerAssistantRoutes(a)

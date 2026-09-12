@@ -1,20 +1,12 @@
-// Messaging SPA — extracted from templates/pages/messaging.html inline <script>
-// Keeps waApp() Alpine component cacheable (was 400L inline, uncacheable)
-window._accountConnected = window._accountConnected || {}
-window._accountMeta = window._accountMeta || {}
-
+// Messaging SPA — per-account chat at /accounts/:id/chat.
+// Single-account scope injected by the server (window._chatAccount);
+// there is no account picker on this surface.
 function waApp() {
   return {
     sender: '', senderConnected: false, tab: 'chats', search: '',
     loading: false, listError: '',
     chats: [], contacts: [], groups: [], channels: [],
 
-    get selectedAccountName() {
-      if (!this.sender) return ''
-      const m = window._accountMeta[this.sender]
-      if (!m) return this.sender
-      return m.name + (m.phone ? ' · ' + m.phone : '')
-    },
     activeChat: '', activeChatName: '', activeChatIsGroup: false, activeChatIsChannel: false,
     messages: [], msgsLoading: false, hasOlder: false, oldestTs: '',
     channelMessages: [], channelOldestServerID: 0,
@@ -28,25 +20,15 @@ function waApp() {
     _pollTimer: null,
 
     init() {
-      // Auto-select first connected account if none selected
-      const ids = Object.keys(window._accountConnected || {})
-      const firstConnected = ids.find(id => window._accountConnected[id] === true)
-      if (!this.sender && firstConnected) {
-        this.sender = firstConnected
-        this.refreshSenderStatus().then(() => {
-          if (this.senderConnected) this.loadTab()
-        })
-        if (this.sender) {
-          this._statusTimer = setInterval(() => this.refreshSenderStatus(), 3000)
-        }
-      }
-      // Fallback: also try select element (legacy)
-      const sel = document.querySelector('select[x-model="sender"]')
-      if (sel && !this.sender) {
-        const opts = [...sel.options].filter(o => o.value && o.textContent.includes('Connected'))
-        if (opts.length) { this.sender = opts[0].value; this.senderConnected = true; this.onAccountChange() }
-      }
-      // Periodic refresh is handled by refreshSenderStatus for the current sender
+      const scoped = window._chatAccount || {}
+      if (!scoped.id) return
+      this.sender = scoped.id
+      this.senderConnected = scoped.connected === true
+      this.refreshSenderStatus().then(() => {
+        if (this.senderConnected) this.loadTab()
+      })
+      // Poll sender status every 3s while on this page
+      this._statusTimer = setInterval(() => this.refreshSenderStatus(), 3000)
     },
 
     async refreshSenderStatus() {
@@ -56,27 +38,16 @@ function waApp() {
       }
       try {
         const res = await fetch(`/accounts/${this.sender}/session-status`, { credentials: 'same-origin' })
+        if (res.status === 403 || res.status === 404) {
+          // Account deleted or access revoked mid-chat — back to the list.
+          window.location.href = '/accounts'
+          return
+        }
         const html = await res.text()
         const isConnected = html.includes('Connected') && !html.includes('Disconnected')
         this.senderConnected = isConnected
-        window._accountConnected[this.sender] = isConnected
       } catch {
-        // fallback to static map
-        this.senderConnected = this.sender ? (window._accountConnected[this.sender] === true) : false
-      }
-    },
-
-    async onAccountChange() {
-      this.activeChat = ''
-      this.messages = []
-      this.replyTo = null
-      this.chats = []; this.contacts = []; this.groups = []; this.channels = []
-      await this.refreshSenderStatus()
-      if (this.sender && this.senderConnected) this.loadTab()
-      // Poll sender status every 3s while on this page
-      if (this._statusTimer) clearInterval(this._statusTimer)
-      if (this.sender) {
-        this._statusTimer = setInterval(() => this.refreshSenderStatus(), 3000)
+        // keep last known state on transient network errors
       }
     },
 

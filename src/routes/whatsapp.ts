@@ -1,33 +1,8 @@
 import type { Hono } from 'hono'
-import { getIdentity, getToken, getFlash } from '../middleware/auth.js'
+import { getToken } from '../middleware/auth.js'
 import { backend } from '../lib/api.js'
-import { renderPage } from '../lib/render/index.js'
 
 export function registerWhatsappRoutes(app: Hono): void {
-  app.get('/whatsapp', async (c) => {
-    const identity = getIdentity(c)!
-    const token = getToken(c)!
-    const flash = getFlash(c)
-    const { data } = await backend.json('GET', '/api/v1/accounts', token)
-    const accounts: any[] = Array.isArray(data) ? data : (data?.accounts ?? [])
-    const rows = accounts.map((a: any) => ({
-      ID: a.id,
-      AccountName: a.account_name ?? '',
-      PhoneNumber: a.phone_number ?? '',
-      Connected: a.status?.connected ?? a.connected ?? a.authorized ?? a.Authorized ?? false,
-    }))
-    return c.html(
-      renderPage('messaging', {
-        Title: 'WhatsApp Web — NoTalk',
-        Page: 'messaging',
-        Version: '1.0.0',
-        Identity: identity,
-        Flash: flash ? { Type: flash.Type, Message: flash.Message } : null,
-        Data: { Accounts: rows },
-      })
-    )
-  })
-
   // Generic proxy (GET chats/contacts/groups/newsletters + POST send/follow) — no body rewrite
   for (const [front, back] of [
     ['POST:/whatsapp/:id/send', 'POST:/api/v1/accounts/:id/messages'],
