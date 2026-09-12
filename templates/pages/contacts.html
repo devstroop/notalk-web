@@ -147,7 +147,7 @@
   </div>
 
   <!-- Create Contact Modal — lean with groups -->
-  <div x-show="showCreate" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="showCreate = false">
+  <div x-show="showCreate" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 mt-0! p-4" @click.self="showCreate = false">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" @click.stop>
       <div class="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 rounded-t-xl">
         <h3 class="text-lg font-semibold text-gray-900">New Contact</h3>
@@ -187,7 +187,7 @@
 
   <!-- Edit Contact Modal — lean with groups -->
   <template x-if="editContact">
-  <div x-show="editContact" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="editContact = null">
+  <div x-show="editContact" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 mt-0! p-4" @click.self="editContact = null">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" @click.stop>
       <div class="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 rounded-t-xl">
         <h3 class="text-lg font-semibold text-gray-900">Edit Contact</h3>
@@ -232,7 +232,7 @@
   </template>
 
   <!-- Delete Contact Confirm -->
-  <div x-show="deleteContact" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="deleteContact = null">
+  <div x-show="deleteContact" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 mt-0! p-4" @click.self="deleteContact = null">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" @click.stop>
       <h3 class="text-lg font-semibold text-gray-900">Delete contact?</h3>
       <p class="text-sm text-gray-500">Delete <strong x-text="deleteContact?.name || deleteContact?.id"></strong>. This cannot be undone.</p>
@@ -244,7 +244,7 @@
   </div>
 
   <!-- Create Group Modal -->
-  <div x-show="showCreateGroup" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="showCreateGroup = false">
+  <div x-show="showCreateGroup" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 mt-0! p-4" @click.self="showCreateGroup = false">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" @click.stop>
       <h3 class="text-lg font-semibold text-gray-900">New Group</h3>
       <form method="POST" action="/contact-groups" class="space-y-4">
@@ -261,7 +261,7 @@
 
   <!-- Edit Group Modal -->
   <template x-if="editGroup">
-  <div x-show="editGroup" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="editGroup = null">
+  <div x-show="editGroup" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 mt-0! p-4" @click.self="editGroup = null">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" @click.stop>
       <h3 class="text-lg font-semibold text-gray-900">Edit Group</h3>
       <form method="POST" :action="'/contact-groups/' + editGroup.id + '/update'" class="space-y-4">
@@ -278,7 +278,7 @@
   </template>
 
   <!-- Delete Group Confirm -->
-  <div x-show="deleteGroup" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="deleteGroup = null">
+  <div x-show="deleteGroup" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 mt-0! p-4" @click.self="deleteGroup = null">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" @click.stop>
       <h3 class="text-lg font-semibold text-gray-900">Delete group?</h3>
       <p class="text-sm text-gray-500">Delete group <strong x-text="deleteGroup?.name"></strong>? Contacts will remain, only the group label is removed.</p>

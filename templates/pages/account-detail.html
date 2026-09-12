@@ -123,17 +123,17 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">URL</label>
           <input type="url" x-model="whURL" placeholder="https://example.com/webhook"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-none">
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-hidden">
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Secret <span class="text-gray-400 font-normal">(HMAC signing, optional)</span></label>
           <input type="password" x-model="whSecret" placeholder="Leave empty to keep existing"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-none">
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-hidden">
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Events <span class="text-gray-400 font-normal">(comma-separated, empty = all)</span></label>
           <input type="text" x-model="whEvents" placeholder="message, receipt, presence"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-none">
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-hidden">
         </div>
         <label class="flex items-center gap-2 text-sm">
           <input type="checkbox" x-model="whEnabled" class="rounded border-gray-300 text-brand-800 focus:ring-brand-500">
@@ -162,7 +162,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Protocol</label>
             <select x-model="pxProtocol"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-none">
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-hidden">
               <option value="http">HTTP</option>
               <option value="https">HTTPS</option>
               <option value="socks5">SOCKS5</option>
@@ -171,24 +171,24 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Host</label>
             <input type="text" x-model="pxHost" placeholder="proxy.example.com"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-none">
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-hidden">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Port</label>
             <input type="number" x-model.number="pxPort" min="1" max="65535"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-none">
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-hidden">
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Username <span class="text-gray-400 font-normal">(optional)</span></label>
             <input type="text" x-model="pxUser" placeholder="username"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-none">
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-hidden">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Password <span class="text-gray-400 font-normal">(optional)</span></label>
             <input type="password" x-model="pxPass" placeholder="Leave empty to keep existing"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-none">
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-hidden">
           </div>
         </div>
         <label class="flex items-center gap-2 text-sm">
@@ -215,12 +215,12 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
             <input type="text" name="account_name" x-model="editName" required
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-none">
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-hidden">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
             <input type="text" name="phone_number" x-model="editPhone" required
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-none">
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 outline-hidden">
           </div>
         </div>
         <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">

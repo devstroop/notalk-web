@@ -1,6 +1,72 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Dark mode follows the `dark` class (v3 darkMode:'class' semantics). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Brand scale (logo pink #fa7b93) — preserved from v3 config. */
+  --color-brand-50: #fef7f8;
+  --color-brand-100: #feeff2;
+  --color-brand-200: #fddae0;
+  --color-brand-300: #fcbac6;
+  --color-brand-400: #fb98aa;
+  --color-brand-500: #fa7b93;
+  --color-brand-600: #da657d;
+  --color-brand-700: #b74e64;
+  --color-brand-800: #8e3147;
+  --color-brand-900: #721e33;
+  --color-brand-950: #590e22;
+
+  /* Semantic tokens (shadcn-style) for the component library. Light theme
+     active; dark values ride the `dark` class via CSS vars below. */
+  --color-background: #ffffff;
+  --color-foreground: #18181b;
+  --color-card: #ffffff;
+  --color-card-foreground: #18181b;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #18181b;
+  --color-primary: #fa7b93;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f4f4f5;
+  --color-secondary-foreground: #18181b;
+  --color-muted: #f4f4f5;
+  --color-muted-foreground: #71717a;
+  --color-accent: #f4f4f5;
+  --color-accent-foreground: #18181b;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e4e4e7;
+  --color-input: #e4e4e7;
+  --color-ring: #fa7b93;
+
+  --radius-lg: 0.5rem;
+  --radius-md: calc(0.5rem - 2px);
+  --radius-sm: calc(0.5rem - 4px);
+}
+
+.dark {
+  --color-background: #09090b;
+  --color-foreground: #fafafa;
+  --color-card: #18181b;
+  --color-card-foreground: #fafafa;
+  --color-popover: #18181b;
+  --color-popover-foreground: #fafafa;
+  --color-primary: #fa7b93;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #27272a;
+  --color-secondary-foreground: #fafafa;
+  --color-muted: #27272a;
+  --color-muted-foreground: #a1a1aa;
+  --color-accent: #27272a;
+  --color-accent-foreground: #fafafa;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #27272a;
+  --color-input: #27272a;
+  --color-ring: #fa7b93;
+}
 
 /* NoTalk — custom styles (previously public/static/css/app.css) */
 

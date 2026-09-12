@@ -75,7 +75,7 @@
   </div>
 
   <!-- Create Role Modal -->
-  <div x-show="showCreate" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0" @click.self="showCreate = false">
+  <div x-show="showCreate" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 mt-0!" @click.self="showCreate = false">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4" @click.stop>
       <h3 class="text-lg font-semibold text-gray-900">Create Role</h3>
       <form method="POST" action="/admin/roles" class="space-y-4">
@@ -106,7 +106,7 @@
 
   <!-- Edit Role Modal -->
   <template x-if="editRole">
-  <div x-show="editRole" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0" @click.self="editRole = null">
+  <div x-show="editRole" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 mt-0!" @click.self="editRole = null">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4" @click.stop>
       <h3 class="text-lg font-semibold text-gray-900">Edit Role</h3>
       <form method="POST" :action="'/admin/roles/' + editRole.id + '/update'" class="space-y-4">

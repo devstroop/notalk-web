@@ -125,7 +125,7 @@
         :disabled="streaming || !{{if .Data.AIEnabled}}true{{else}}false{{end}}"
         rows="1"
         placeholder="{{if .Data.AIEnabled}}Ask me anything… (Enter to send, Shift+Enter for new line){{else}}AI not configured{{end}}"
-        class="flex-1 resize-none rounded-xl border border-gray-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 px-4 py-2.5 text-sm text-gray-800 outline-none transition-all disabled:bg-gray-50 disabled:text-gray-400"
+        class="flex-1 resize-none rounded-xl border border-gray-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 px-4 py-2.5 text-sm text-gray-800 outline-hidden transition-all disabled:bg-gray-50 disabled:text-gray-400"
         style="max-height: 150px; overflow-y: auto;"
         x-ref="inputBox"
       ></textarea>

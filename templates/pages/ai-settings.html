@@ -43,7 +43,7 @@
       <div class="space-y-1.5">
         <label for="provider" class="text-sm font-medium text-gray-700">Provider</label>
         <select name="provider" id="provider" {{if .Data.FromConfig}}disabled{{end}}
-          class="w-full max-w-xs rounded-xl border border-gray-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 px-4 py-2.5 text-sm outline-none transition-all bg-white {{if .Data.FromConfig}}opacity-60 cursor-not-allowed{{end}}">
+          class="w-full max-w-xs rounded-xl border border-gray-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 px-4 py-2.5 text-sm outline-hidden transition-all bg-white {{if .Data.FromConfig}}opacity-60 cursor-not-allowed{{end}}">
           <option value="openai" {{if eq .Data.Provider "openai"}}selected{{end}}>OpenAI (GPT)</option>
           <option value="ollama" {{if eq .Data.Provider "ollama"}}selected{{end}}>Ollama (local)</option>
         </select>
@@ -60,7 +60,7 @@
         <input type="password" name="api_key" id="api_key" {{if .Data.FromConfig}}readonly{{end}}
           value="{{if .Data.APIKey}}••••••••{{end}}"
           placeholder="sk-..."
-          class="w-full max-w-md rounded-xl border border-gray-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 px-4 py-2.5 text-sm outline-none transition-all {{if .Data.FromConfig}}bg-gray-50 opacity-60 cursor-not-allowed{{end}}">
+          class="w-full max-w-md rounded-xl border border-gray-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 px-4 py-2.5 text-sm outline-hidden transition-all {{if .Data.FromConfig}}bg-gray-50 opacity-60 cursor-not-allowed{{end}}">
         {{if not .Data.FromConfig}}<p class="text-xs text-gray-400">Leave unchanged to keep the existing key. Clear and save to remove it.</p>{{end}}
       </div>
 
@@ -73,7 +73,7 @@
         <input type="url" name="base_url" id="base_url" {{if .Data.FromConfig}}readonly{{end}}
           value="{{.Data.BaseURL}}"
           placeholder="http://localhost:11434 (Ollama) or https://api.openai.com"
-          class="w-full max-w-lg rounded-xl border border-gray-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 px-4 py-2.5 text-sm outline-none transition-all {{if .Data.FromConfig}}bg-gray-50 opacity-60 cursor-not-allowed{{end}}">
+          class="w-full max-w-lg rounded-xl border border-gray-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 px-4 py-2.5 text-sm outline-hidden transition-all {{if .Data.FromConfig}}bg-gray-50 opacity-60 cursor-not-allowed{{end}}">
         {{if not .Data.FromConfig}}<p class="text-xs text-gray-400">Leave blank to use the provider default. Set to your Ollama server for local models.</p>{{end}}
       </div>
 
@@ -83,7 +83,7 @@
         <input type="text" name="model" id="model" {{if .Data.FromConfig}}readonly{{end}}
           value="{{.Data.Model}}"
           placeholder="gpt-4o-mini"
-          class="w-full max-w-xs rounded-xl border border-gray-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 px-4 py-2.5 text-sm outline-none transition-all {{if .Data.FromConfig}}bg-gray-50 opacity-60 cursor-not-allowed{{end}}">
+          class="w-full max-w-xs rounded-xl border border-gray-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 px-4 py-2.5 text-sm outline-hidden transition-all {{if .Data.FromConfig}}bg-gray-50 opacity-60 cursor-not-allowed{{end}}">
         <p class="text-xs text-gray-400">
           OpenAI: <code class="bg-gray-100 px-1 rounded">gpt-4o-mini</code>, <code class="bg-gray-100 px-1 rounded">gpt-4o</code> · 
           Ollama: <code class="bg-gray-100 px-1 rounded">llama3.2</code>, <code class="bg-gray-100 px-1 rounded">qwen2.5</code>
