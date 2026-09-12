@@ -21,7 +21,7 @@
         grpAdmin:    localStorage.getItem('grpAdmin')    !== 'false',
         init() {
           const p = window.location.pathname;
-          if (p === '/accounts' || p.startsWith('/accounts/') || p === '/whatsapp') this.grpAccounts = true;
+          if (p === '/accounts' || p.startsWith('/accounts/')) this.grpAccounts = true;
           if (p === '/admin/users' || p === '/admin/roles')    this.grpAdmin    = true;
         }
       }"

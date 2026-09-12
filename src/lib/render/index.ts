@@ -438,7 +438,7 @@ function evalPageTemplate(page: string, data: PageData): string {
             <td class="px-5 py-3 text-gray-500">${esc(a.PhoneNumber)}</td>
             <td class="px-5 py-3">${a.Connected ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Connected</span>` : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Disconnected</span>`}</td>
             <td class="px-5 py-3 text-gray-500">${esc(timeAgo(a.CreatedAt))}</td>
-            <td class="px-5 py-3 text-right"><div class="flex items-center justify-end gap-3"><a href="/accounts/${escAttr(a.ID)}/autopilot" class="text-sm font-medium text-violet-600">Autopilot</a><a href="/accounts/${escAttr(a.ID)}" class="text-brand-800 text-sm font-medium">Manage →</a></div></td>
+            <td class="px-5 py-3 text-right"><div class="flex items-center justify-end gap-3"><a href="/accounts/${escAttr(a.ID)}/chat" class="text-sm font-medium text-green-700 hover:text-green-800">Chat</a><a href="/accounts/${escAttr(a.ID)}/autopilot" class="text-sm font-medium text-violet-600">Autopilot</a><a href="/accounts/${escAttr(a.ID)}" class="text-brand-800 text-sm font-medium">Manage →</a></div></td>
           </tr>`
         )
         .join('')

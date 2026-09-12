@@ -7,6 +7,9 @@ export function registerAccountsFragments(app: Hono): void {
     const id = c.req.param('id')
     const token = getToken(c)!
     const { status, data } = await backend.json('GET', `/api/v1/accounts/${id}/session`, token)
+    // Pass through 403/404 so per-account surfaces (chat) can detect a
+    // deleted or unshared account; htmx noSwap config leaves other badges intact.
+    if (status === 403 || status === 404) return c.text('', status as any)
     const d: any = data as any
     const connected = status === 200 && (d?.connected === true || d?.status?.connected === true || d?.authorized === true || d?.Authorized === true || d?.isLoggedIn === true)
     const html = connected
