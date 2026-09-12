@@ -177,7 +177,7 @@ function renderGoConditionals(html: string, data: PageData): string {
   })
   // Fallback defaults if not found (e.g., when partial not yet inlined or definitions stripped elsewhere)
   if (!goVars['item']) goVars['item'] = 'flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors'
-  if (!goVars['child']) goVars['child'] = 'flex items-center gap-2.5 ml-4 px-3 py-2 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors'
+  if (!goVars['child']) goVars['child'] = 'flex items-center gap-2.5 ml-2 px-3 py-2 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors'
   if (!goVars['active']) goVars['active'] = 'bg-white/10 text-white'
   if (!goVars['label']) goVars['label'] = 'px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500'
   // Handle {{if eq .Page "xxx"}}{{$active}}{{end}} and {{if or (eq .Page "a") (eq .Page "b")}}{{$active}}{{end}}
