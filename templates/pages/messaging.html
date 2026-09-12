@@ -5,7 +5,7 @@
   <div class="flex flex-wrap items-center justify-between gap-2 bg-white border-b border-gray-200 px-4 py-2 shrink-0"
        :class="activeChat ? 'hidden md:flex' : 'flex'">
     <div class="flex items-center gap-3 min-w-0">
-      <a href="/accounts" title="Back to Accounts" class="p-1.5 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors shrink-0">
+      <a href="/accounts" title="Back to Accounts" class="p-1.5 -ml-1 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors shrink-0">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
       </a>
       <div class="min-w-0">
@@ -17,11 +17,11 @@
       </div>
     </div>
     <div class="flex items-center gap-1 shrink-0">
-      <button @click="showBulk = true" :disabled="!sender || !senderConnected" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+      <button @click="showBulk = true" :disabled="!sender || !senderConnected" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Bulk Send
       </button>
-      <button @click="showNewChat = true" :disabled="!sender || !senderConnected" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50 transition-colors">
+      <button @click="showNewChat = true" :disabled="!sender || !senderConnected" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-brand-500 rounded-md hover:bg-brand-600 disabled:opacity-50 transition-colors">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         New Chat
       </button>
@@ -47,7 +47,7 @@
       <div x-show="senderConnected" class="px-3 py-2 shrink-0">
         <div class="relative">
           <svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" x-model="search" placeholder="Search…" class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+          <input type="text" x-model="search" placeholder="Search…" class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
         </div>
       </div>
 
@@ -66,7 +66,7 @@
             <p class="text-sm font-semibold text-gray-800">Account not connected</p>
             <p class="text-xs text-gray-500 mt-1">This WhatsApp account is offline.<br>Connect it to start messaging.</p>
           </div>
-          <a href="/accounts" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 transition-colors">
+          <a href="/accounts" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-brand-500 rounded-md hover:bg-brand-600 transition-colors">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
             Go to Accounts
           </a>
@@ -176,11 +176,11 @@
           <p class="text-sm text-gray-500 mt-1.5 leading-relaxed">The selected WhatsApp account isn't connected.<br>Scan the QR code on the Accounts page to reconnect.</p>
         </div>
         <div class="flex flex-col sm:flex-row gap-2">
-          <a href="/accounts" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-xl hover:bg-brand-600 transition-colors">
+          <a href="/accounts" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-md hover:bg-brand-600 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 17h7M17 14v7"/></svg>
             Connect via QR
           </a>
-          <button @click="sender = ''; senderConnected = false" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
+          <button @click="sender = ''; senderConnected = false" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
             Switch Account
           </button>
         </div>
@@ -201,7 +201,7 @@
         <div class="flex items-center gap-3 min-w-0">
           <!-- Back button (mobile only) -->
           <button @click="activeChat = ''; activeChatName = ''; activeChatIsGroup = false; activeChatIsChannel = false; messages = [];"
-                  class="md:hidden p-1.5 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors shrink-0">
+                  class="md:hidden p-1.5 -ml-1 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors shrink-0">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
           </button>
           <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0"
@@ -217,10 +217,10 @@
           </div>
         </div>
         <div class="flex items-center gap-1">
-          <button x-show="activeChatIsChannel" @click="unfollowChannel()" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Unfollow">
+          <button x-show="activeChatIsChannel" @click="unfollowChannel()" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Unfollow">
             Unfollow
           </button>
-          <button @click="activeChatIsChannel ? loadChannelMessages() : loadMessages()" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors" title="Refresh">
+          <button @click="activeChatIsChannel ? loadChannelMessages() : loadMessages()" class="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors" title="Refresh">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
           </button>
         </div>
@@ -237,7 +237,7 @@
         </div>
         <template x-for="(msg, idx) in messages" :key="msg._localId || msg.id || msg.message_id || idx">
           <div class="flex" :class="[msg.from_me ? 'justify-end' : 'justify-start', msg._status === 'sending' ? 'msg-optimistic' : '', msg._status === 'failed' ? 'msg-failed' : '']">
-            <div class="max-w-[70%] rounded-xl px-3 py-2 text-sm shadow-sm relative group"
+            <div class="max-w-[70%] rounded-md px-3 py-2 text-sm shadow-sm relative group"
               :class="msg.from_me ? 'bg-green-100 text-green-900 rounded-br-sm' : (activeChatIsChannel ? 'bg-purple-50 text-gray-900 rounded-bl-sm border border-purple-100' : 'bg-white text-gray-900 rounded-bl-sm border border-gray-100')">
               <!-- Sender name for group messages -->
               <p x-show="activeChatIsGroup && !msg.from_me && msg.sender_jid" class="text-[10px] font-semibold text-blue-600 mb-0.5" x-text="msg.sender_jid.split('@')[0]"></p>
@@ -279,7 +279,7 @@
               </div>
               <!-- Hover actions (not for channels) -->
               <div x-show="!activeChatIsChannel && msg._status !== 'failed'" class="absolute -top-2 opacity-0 group-hover:opacity-100 transition-opacity" :class="msg.from_me ? 'left-0' : 'right-0'">
-                <div class="flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg shadow-sm px-1 py-0.5">
+                <div class="flex items-center gap-0.5 bg-white border border-gray-200 rounded-md shadow-sm px-1 py-0.5">
                   <button @click="reactToMessage(msg, '👍')" class="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-xs" title="Like">👍</button>
                   <button @click="replyTo = msg" class="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-xs text-gray-500" title="Reply">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 17-5-5 5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
@@ -324,13 +324,13 @@
       <div x-show="activeChat && !activeChatIsChannel && senderConnected" class="bg-white border-t border-gray-200 px-4 py-3 shrink-0">
         <form @submit.prevent="sendMessage()" class="flex items-end gap-2">
           <!-- File attach -->
-          <label class="p-2 text-gray-400 hover:text-gray-600 cursor-pointer rounded-lg hover:bg-gray-100 transition-colors shrink-0">
+          <label class="p-2 text-gray-400 hover:text-gray-600 cursor-pointer rounded-md hover:bg-gray-100 transition-colors shrink-0">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
             <input type="file" @change="composeFile = $event.target.files[0]" class="hidden">
           </label>
           <!-- Input -->
           <div class="flex-1 min-w-0">
-            <div x-show="composeFile" class="flex items-center gap-2 mb-1 px-3 py-1.5 bg-gray-50 rounded-lg text-xs text-gray-600">
+            <div x-show="composeFile" class="flex items-center gap-2 mb-1 px-3 py-1.5 bg-gray-50 rounded-md text-xs text-gray-600">
               <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
               <span class="truncate" x-text="composeFile?.name"></span>
               <button type="button" @click="composeFile = null" class="text-gray-400 hover:text-gray-600 shrink-0">
@@ -338,11 +338,11 @@
               </button>
             </div>
             <textarea x-model="composeText" @keydown.enter.prevent="if (!$event.shiftKey) sendMessage()" rows="1"
-              placeholder="Type a message…" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 resize-none"
+              placeholder="Type a message…" class="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600 resize-none"
               style="min-height:40px; max-height:120px;" @input="$el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"></textarea>
           </div>
           <!-- Send -->
-          <button type="submit" :disabled="(!composeText.trim() && !composeFile) || sending" class="p-2.5 bg-brand-500 text-white rounded-xl hover:bg-brand-600 disabled:opacity-40 transition-colors shrink-0">
+          <button type="submit" :disabled="(!composeText.trim() && !composeFile) || sending" class="p-2.5 bg-brand-500 text-white rounded-md hover:bg-brand-600 disabled:opacity-40 transition-colors shrink-0">
             <svg x-show="!sending" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
             <svg x-show="sending" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
           </button>
@@ -354,15 +354,15 @@
   <!-- New Chat modal -->
   <div x-show="showNewChat" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4">
     <div class="fixed inset-0 bg-black/40" @click="showNewChat = false"></div>
-    <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+    <div class="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6 space-y-4">
       <h4 class="text-lg font-semibold text-gray-900">New Message</h4>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-        <input type="tel" x-model="newChatPhone" placeholder="919876543210" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+        <input type="tel" x-model="newChatPhone" placeholder="919876543210" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
       </div>
       <div class="flex justify-end gap-2">
-        <button @click="showNewChat = false" class="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
-        <button @click="startNewChat()" :disabled="!newChatPhone.trim()" class="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50">Start Chat</button>
+        <button @click="showNewChat = false" class="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50">Cancel</button>
+        <button @click="startNewChat()" :disabled="!newChatPhone.trim()" class="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-md hover:bg-brand-600 disabled:opacity-50">Start Chat</button>
       </div>
     </div>
   </div>
@@ -370,24 +370,24 @@
   <!-- Bulk Send modal -->
   <div x-show="showBulk" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4">
     <div class="fixed inset-0 bg-black/40" @click="showBulk = false"></div>
-    <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+    <div class="relative bg-white rounded-lg shadow-xl w-full max-w-lg p-6 space-y-4 max-h-[80vh] overflow-y-auto">
       <h4 class="text-lg font-semibold text-gray-900">Bulk Campaign</h4>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Recipients <span class="text-gray-400">(one phone per line)</span></label>
-        <textarea x-model="bulk.phones" rows="5" placeholder="919876543210&#10;919876543211" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:border-brand-600"></textarea>
+        <textarea x-model="bulk.phones" rows="5" placeholder="919876543210&#10;919876543211" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:border-brand-600"></textarea>
         <p class="text-xs text-gray-400 mt-1"><span x-text="bulk.phones.split('\\n').filter(l => l.trim()).length"></span> recipient(s)</p>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
-        <textarea x-model="bulk.text" rows="3" placeholder="Type your message…" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600"></textarea>
+        <textarea x-model="bulk.text" rows="3" placeholder="Type your message…" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600"></textarea>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Attachment <span class="text-gray-400">(optional)</span></label>
-        <input type="file" @change="bulk.file = $event.target.files[0]" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand-50 file:text-brand-800 hover:file:bg-brand-100">
+        <input type="file" @change="bulk.file = $event.target.files[0]" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-brand-50 file:text-brand-800 hover:file:bg-brand-100">
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Delay between messages <span class="text-gray-400">(seconds)</span></label>
-        <input type="number" x-model.number="bulk.delay" min="1" max="60" class="rounded-lg border border-gray-300 px-3 py-2 text-sm w-24 focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+        <input type="number" x-model.number="bulk.delay" min="1" max="60" class="rounded-md border border-gray-300 px-3 py-2 text-sm w-24 focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
       </div>
       <!-- Progress -->
       <div x-show="bulkRunning || bulkDone" class="space-y-2">
@@ -403,9 +403,9 @@
         </template>
       </div>
       <div class="flex justify-end gap-2">
-        <button x-show="bulkRunning" @click="bulkAbort = true" class="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50">Abort</button>
-        <button @click="showBulk = false" x-show="!bulkRunning" class="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Close</button>
-        <button @click="sendBulk()" :disabled="!sender || bulkRunning || !bulk.phones.trim() || !bulk.text.trim()" class="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50">
+        <button x-show="bulkRunning" @click="bulkAbort = true" class="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-md hover:bg-red-50">Abort</button>
+        <button @click="showBulk = false" x-show="!bulkRunning" class="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50">Close</button>
+        <button @click="sendBulk()" :disabled="!sender || bulkRunning || !bulk.phones.trim() || !bulk.text.trim()" class="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-md hover:bg-brand-600 disabled:opacity-50">
           <span x-text="bulkRunning ? 'Sending…' : 'Start Campaign'"></span>
         </button>
       </div>

@@ -1,30 +1,26 @@
 {{define "content"}}
 <div class="space-y-6">
 
-  <!-- Header -->
-  <div>
-    <h3 class="text-lg font-semibold text-gray-900">Usage &amp; Analytics</h3>
-    <p class="text-sm text-gray-500">Messages sent today by each user across all accounts.</p>
-  </div>
+  {{template "component/navigation/page-head" (dict "title" "Usage & Analytics" "desc" "Messages sent today by each user across all accounts.")}}
 
   <!-- Summary cards -->
   <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-    <div class="bg-white rounded-xl border border-gray-200 p-4">
+    <div class="bg-white rounded-lg border border-gray-200 p-4">
       <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Active Users</p>
       <p class="mt-1 text-2xl font-bold text-gray-900">{{len .Data.Usage}}</p>
     </div>
-    <div class="bg-white rounded-xl border border-gray-200 p-4">
+    <div class="bg-white rounded-lg border border-gray-200 p-4">
       <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Messages Today</p>
       <p class="mt-1 text-2xl font-bold text-brand-600">{{.Data.TotalMessages}}</p>
     </div>
-    <div class="bg-white rounded-xl border border-gray-200 p-4 col-span-2 sm:col-span-1">
+    <div class="bg-white rounded-lg border border-gray-200 p-4 col-span-2 sm:col-span-1">
       <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Avg per User</p>
       <p class="mt-1 text-2xl font-bold text-gray-900">{{.Data.AvgMessages}}</p>
     </div>
   </div>
 
   <!-- Usage table -->
-  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
     {{if .Data.Usage}}
     <table class="w-full text-sm">
       <thead class="bg-gray-50 border-b border-gray-200">

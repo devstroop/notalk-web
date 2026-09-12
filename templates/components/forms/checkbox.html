@@ -1,0 +1,7 @@
+{{define "component/forms/checkbox"}}
+{{/* Usage: {{template "component/forms/checkbox" (dict "label" "Enable webhooks" "name" "enabled" "checked" "1" (falsy: missing, empty, false, or "false") "hint" "")}} — checked: any non-empty value. */}}
+<label class="flex items-start gap-2.5 text-sm cursor-pointer">
+  <input type="checkbox" name="{{.name}}"{{if .value}} value="{{.value}}"{{end}}{{if .checked}} checked{{end}}{{if .xchecked}} x-bind:checked="{{.xchecked}}"{{end}} class="mt-0.5 size-4 rounded border-input accent-primary" />
+  <span><span class="font-medium text-gray-700">{{.label}}</span>{{if .hint}} <span class="block text-xs text-muted-foreground mt-0.5">{{.hint}}</span>{{end}}</span>
+</label>
+{{end}}

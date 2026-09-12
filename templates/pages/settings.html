@@ -2,7 +2,7 @@
 <div x-data="{ section: 'general' }" class="flex gap-6 items-start">
 
   <!-- ── Sidebar nav ──────────────────────────────── -->
-  <aside class="w-52 shrink-0 bg-white rounded-xl border border-gray-200 overflow-hidden sticky top-4">
+  <aside class="w-52 shrink-0 bg-white rounded-lg border border-gray-200 overflow-hidden sticky top-4">
     <div class="px-4 py-3 border-b border-gray-100">
       <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Settings</p>
     </div>
@@ -44,14 +44,11 @@
     <!-- ════ General ════ -->
     <div x-show="section==='general'" x-cloak class="space-y-6">
 
-      <div>
-        <h3 class="text-lg font-semibold text-gray-900">General</h3>
-        <p class="text-sm text-gray-500">Your profile and account security.</p>
-      </div>
+      {{template "component/navigation/page-head" (dict "title" "General" "desc" "Your profile and account security.")}}
 
       {{if .Data.User}}
       <!-- Profile info -->
-      <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+      <div class="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
         <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Profile</h4>
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
@@ -65,10 +62,7 @@
           <div>
             <dt class="text-gray-500">Role</dt>
             <dd class="mt-1">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                {{if eq .Data.User.RoleName "admin"}}bg-purple-100 text-purple-800{{else}}bg-blue-100 text-blue-800{{end}}">
-                {{.Data.User.RoleName}}
-              </span>
+              {{if eq .Data.User.RoleName "admin"}}{{template "component/display/badge" (dict "text" .Data.User.RoleName "color" "purple")}}{{else}}{{template "component/display/badge" (dict "text" .Data.User.RoleName "color" "blue")}}{{end}}
             </dd>
           </div>
           <div>
@@ -79,7 +73,7 @@
       </div>
 
       {{else}}
-      <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <div class="bg-white rounded-lg border border-gray-200 p-6">
         <p class="text-sm text-gray-500">You are authenticated as the <strong>system administrator</strong> via the secret key. User profile settings are not available for this identity.</p>
       </div>
       {{end}}
@@ -89,39 +83,20 @@
     <!-- ════ Account ════ -->
     <div x-show="section==='account'" x-cloak class="space-y-6">
 
-      <div>
-        <h3 class="text-lg font-semibold text-gray-900">Account</h3>
-        <p class="text-sm text-gray-500">Manage your account password and security.</p>
-      </div>
+      {{template "component/navigation/page-head" (dict "title" "Account" "desc" "Manage your account password and security.")}}
 
       {{if .Data.User}}
-      <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+      <div class="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
         <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Change Password</h4>
         <form method="POST" action="/settings/password" class="space-y-4 max-w-md">
-          <div>
-            <label for="current-acct" class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-            <input type="password" id="current-acct" name="current_password" required autocomplete="current-password"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
-          </div>
-          <div>
-            <label for="new-acct" class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-            <input type="password" id="new-acct" name="new_password" required minlength="8" autocomplete="new-password"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
-          </div>
-          <div>
-            <label for="confirm-acct" class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-            <input type="password" id="confirm-acct" name="confirm_password" required minlength="8" autocomplete="new-password"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
-          </div>
-          <button type="submit"
-            class="btn-loading inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-500 hover:bg-brand-600 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
-            <svg class="btn-spinner hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-            Update Password
-          </button>
+          {{template "component/forms/input" (dict "label" "Current Password" "name" "current_password" "id" "current-acct" "type" "password" "required" "1" "autocomplete" "current-password")}}
+          {{template "component/forms/input" (dict "label" "New Password" "name" "new_password" "id" "new-acct" "type" "password" "required" "1" "minlength" "8" "autocomplete" "new-password")}}
+          {{template "component/forms/input" (dict "label" "Confirm New Password" "name" "confirm_password" "id" "confirm-acct" "type" "password" "required" "1" "minlength" "8" "autocomplete" "new-password")}}
+          {{template "component/forms/button" (dict "text" "Update Password" "type" "submit" "loading" "1")}}
         </form>
       </div>
       {{else}}
-      <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <div class="bg-white rounded-lg border border-gray-200 p-6">
         <p class="text-sm text-gray-500">You are authenticated as the <strong>system administrator</strong> via the secret key. User profile settings are not available for this identity.</p>
       </div>
       {{end}}
@@ -131,31 +106,15 @@
     <!-- ════ Appearance ════ -->
     <div x-show="section==='appearance'" x-cloak class="space-y-6">
 
-      <div>
-        <h3 class="text-lg font-semibold text-gray-900">Appearance</h3>
-        <p class="text-sm text-gray-500">Customize application branding and display.</p>
-      </div>
+      {{template "component/navigation/page-head" (dict "title" "Appearance" "desc" "Customize application branding and display.")}}
 
-      <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <div class="bg-white rounded-lg border border-gray-200 p-6">
         <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-5">Branding</h4>
         <form method="POST" action="/settings/appearance" class="space-y-4 max-w-lg">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Application Name</label>
-            <input type="text" name="app_name" value="{{.Data.AppName}}" placeholder="NoTalk"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
-            <p class="mt-1 text-xs text-gray-400">Shown in the browser title bar and outgoing emails.</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
-            <input type="text" name="app_tagline" value="{{.Data.AppTagline}}" placeholder="Social Engagement Made Simple"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
-            <p class="mt-1 text-xs text-gray-400">Short subtitle shown on the home page and login screen.</p>
-          </div>
+          {{template "component/forms/input" (dict "label" "Application Name" "name" "app_name" "value" .Data.AppName "placeholder" "NoTalk" "hint" "Shown in the browser title bar and outgoing emails.")}}
+          {{template "component/forms/input" (dict "label" "Tagline" "name" "app_tagline" "value" .Data.AppTagline "placeholder" "Social Engagement Made Simple" "hint" "Short subtitle shown on the home page and login screen.")}}
           <div class="flex justify-end pt-1">
-            <button type="submit"
-              class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 transition-colors">
-              Save Appearance
-            </button>
+            {{template "component/forms/button" (dict "text" "Save Appearance" "type" "submit")}}
           </div>
         </form>
       </div>
@@ -165,12 +124,9 @@
     <!-- ════ Localization ════ -->
     <div x-show="section==='localization'" x-cloak class="space-y-6">
 
-      <div>
-        <h3 class="text-lg font-semibold text-gray-900">Localization</h3>
-        <p class="text-sm text-gray-500">Regional formats used across the platform.</p>
-      </div>
+      {{template "component/navigation/page-head" (dict "title" "Localization" "desc" "Regional formats used across the platform.")}}
 
-      <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <div class="bg-white rounded-lg border border-gray-200 p-6">
         <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-5">Regional Settings</h4>
         <form method="POST" action="/settings/localization" class="space-y-5 max-w-lg">
 
@@ -178,7 +134,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
             <select name="currency"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
               <option value="USD" {{if eq .Data.Currency "USD"}}selected{{end}}>USD — US Dollar ($)</option>
               <option value="INR" {{if eq .Data.Currency "INR"}}selected{{end}}>INR — Indian Rupee (₹)</option>
               <option value="EUR" {{if eq .Data.Currency "EUR"}}selected{{end}}>EUR — Euro (€)</option>
@@ -195,7 +151,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
             <select name="timezone"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
               <option value="UTC"                 {{if eq .Data.Timezone "UTC"}}selected{{end}}>UTC</option>
               <option value="Asia/Kolkata"         {{if eq .Data.Timezone "Asia/Kolkata"}}selected{{end}}>Asia/Kolkata (IST +05:30)</option>
               <option value="America/New_York"     {{if eq .Data.Timezone "America/New_York"}}selected{{end}}>America/New_York (EST/EDT)</option>
@@ -212,10 +168,7 @@
           </div>
 
           <div class="flex justify-end pt-1">
-            <button type="submit"
-              class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 transition-colors">
-              Save Localization
-            </button>
+            {{template "component/forms/button" (dict "text" "Save Localization" "type" "submit")}}
           </div>
 
         </form>

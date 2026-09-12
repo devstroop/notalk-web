@@ -18,6 +18,39 @@ document.addEventListener('DOMContentLoaded', function() {
     showToast('error', msg);
   });
 
+  // ── Native dialog delegation (component/dialog-open) ──
+  // Open via data-dialog-trigger + data-dialog-target="id", or Alpine $refs.
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest ? e.target.closest('[data-dialog-trigger]') : null;
+    if (t) {
+      var d = document.getElementById(t.getAttribute('data-dialog-target'));
+      if (d && d.showModal) d.showModal();
+    }
+    var c = e.target.closest ? e.target.closest('[data-dialog-close]') : null;
+    if (c) {
+      var dlg = c.closest('dialog');
+      if (dlg) dlg.close();
+    }
+  });
+  // ── Copy-to-clipboard delegation (component/feedback/copy-button) ──
+  // Value travels in data-copy (quote-safe); label flips to Copied! briefly.
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-copy]') : null;
+    if (!b || !navigator.clipboard) return;
+    var done = function () {
+      var label = b.querySelector('span:last-child');
+      if (!label) return;
+      var orig = label.textContent;
+      label.textContent = 'Copied!';
+      setTimeout(function () { label.textContent = orig; }, 1500);
+    };
+    navigator.clipboard.writeText(b.getAttribute('data-copy') || '').then(done, done);
+  });
+
+  document.querySelectorAll('dialog[data-close-on-backdrop="true"]').forEach(function (d) {
+    d.addEventListener('click', function (e) { if (e.target === d) d.close(); });
+  });
+
   // ── Button loading states ──
   // Any form with a .btn-loading button will show a spinner on submit
   document.addEventListener('submit', function(e) {
@@ -65,7 +98,7 @@ function showToast(type, message) {
     info: 'bg-blue-50 text-blue-800 border-blue-200',
   };
   var toast = document.createElement('div');
-  toast.className = 'fixed top-4 right-4 z-[100] px-4 py-3 rounded-xl text-sm border shadow-lg toast-enter max-w-sm ' + (colors[type] || colors.info);
+  toast.className = 'fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg text-sm border shadow-lg toast-enter max-w-sm ' + (colors[type] || colors.info);
   toast.textContent = message;
   document.body.appendChild(toast);
   setTimeout(function() {

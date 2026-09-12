@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs'
+import { readdirSync, statSync } from 'node:fs'
 import { raw, getTemplatesDir, listBundled } from './cache.js'
 import { normalizeAccounts } from '../normalize.js'
 import { timeAgo } from '../utils.js'
@@ -7,9 +7,16 @@ import { hasPermission, type GoPageData as PageData } from '../../types/index.js
 // Auto-discover layouts/partials/components instead of hardcoding
 function discover(dir: string): string[] {
   try {
-    const fsList = readdirSync(`${getTemplatesDir()}/${dir}`)
-      .filter((f) => f.endsWith('.html'))
-      .map((f) => f.replace('.html', ''))
+    // Recursive so collections (e.g. components/forms) resolve as nested names.
+    const walk = (sub: string): string[] => {
+      const out: string[] = []
+      for (const e of readdirSync(`${getTemplatesDir()}/${dir}${sub}`)) {
+        if (statSync(`${getTemplatesDir()}/${dir}${sub}/${e}`).isDirectory()) out.push(...walk(`${sub}/${e}`))
+        else if (e.endsWith('.html')) out.push(`${sub ? sub.slice(1) + '/' : ''}${e.replace('.html', '')}`)
+      }
+      return out
+    }
+    const fsList = walk('')
     if (fsList.length > 0) return fsList
   } catch {}
   // Workers / fallback: use embedded bundledTemplates (fs unavailable in Workers)
@@ -157,6 +164,11 @@ function renderGoConditionals(html: string, data: PageData): string {
   if (data.Identity) {
     html = html.replace(/\{\{if \.Identity\}\}, \{\{\.Identity\.Username\}\}\{\{end\}\}/g, `, ${esc(data.Identity.username)}`)
     html = html.replace(/\{\{\.Identity\.Username\}\}/g, esc(data.Identity.username))
+    // upper(initial ...) for avatar circles (navbar); engine has no string ops otherwise.
+    html = html.replace(/\{\{upper \(initial \.Identity\.Username\)\}\}/g, () => {
+      const ch = String((data.Identity as any)?.username ?? '').trim().charAt(0).toUpperCase()
+      return esc(ch || '?')
+    })
   } else {
     html = html.replace(/\{\{if \.Identity\}\}[\s\S]*?\{\{end\}\}/g, '')
   }
@@ -176,8 +188,8 @@ function renderGoConditionals(html: string, data: PageData): string {
     return ''
   })
   // Fallback defaults if not found (e.g., when partial not yet inlined or definitions stripped elsewhere)
-  if (!goVars['item']) goVars['item'] = 'flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors'
-  if (!goVars['child']) goVars['child'] = 'flex items-center gap-2.5 ml-2 px-3 py-2 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors'
+  if (!goVars['item']) goVars['item'] = 'flex items-center gap-2.5 px-3 py-2 rounded-md text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors'
+  if (!goVars['child']) goVars['child'] = 'flex items-center gap-2.5 ml-2 px-3 py-2 rounded-md text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors'
   if (!goVars['active']) goVars['active'] = 'bg-white/10 text-white'
   if (!goVars['label']) goVars['label'] = 'px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500'
   // Handle {{if eq .Page "xxx"}}{{$active}}{{end}} and {{if or (eq .Page "a") (eq .Page "b")}}{{$active}}{{end}}
@@ -252,21 +264,57 @@ function renderGoConditionals(html: string, data: PageData): string {
     return result
   }
   html = handleUserIf(html)
-  html = html.replace(/\{\{if \.Data\.([A-Za-z0-9_.]+)\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{end\}\}/g, (m, path, a, b) => {
-    const v = getDataByPath(path)
-    const truthy = Array.isArray(v) ? v.length > 0 : !!v
-    return truthy ? a : b
-  })
-  html = html.replace(/\{\{if not \.Data\.([A-Za-z0-9_.]+)\}\}([\s\S]*?)\{\{end\}\}/g, (m, path, inner) => {
-    const v = getDataByPath(path)
-    const truthy = Array.isArray(v) ? v.length > 0 : !!v
-    return !truthy ? inner : ''
-  })
-  html = html.replace(/\{\{if \.Data\.([A-Za-z0-9_.]+)\}\}([\s\S]*?)\{\{end\}\}/g, (m, path, inner) => {
-    const v = getDataByPath(path)
-    const truthy = Array.isArray(v) ? v.length > 0 : !!v
-    return truthy ? inner : ''
-  })
+  // Depth-aware generic .Data conditionals. The old blind regexes paired an
+  // {{if}} with a far-away {{else}}/{{end}} from an unrelated block (e.g. an
+  // if without else swallowing content up to the next block's else), silently
+  // deleting page regions. Match with nesting depth like handleUsersIf does.
+  const evalDataIfs = (src: string): string => {
+    const openRe = /\{\{if (not )?(\.Data\.[A-Za-z0-9_.]+)\}\}/g
+    let result = '', rest = src
+    for (let guard = 0; guard < 50; guard++) {
+      openRe.lastIndex = 0
+      const om = openRe.exec(rest)
+      if (!om) break
+      const neg = !!om[1]
+      const path = om[2].slice(6)
+      // scan with depth counting; record top-level exact {{else}} only
+      // ({{else if ...}} belongs to chains handled by specific handlers)
+      let depth = 1, idx = om.index + om[0].length, elseIdx = -1, endIdx = -1
+      while (depth > 0 && idx < rest.length) {
+        const ni = rest.indexOf('{{if', idx)
+        const nr = rest.indexOf('{{range', idx)
+        const nw = rest.indexOf('{{with', idx)
+        const ne = rest.indexOf('{{else}}', idx)
+        const nd = rest.indexOf('{{end}}', idx)
+        const cands: Array<{ i: number; t: string }> = []
+        if (ni !== -1) cands.push({ i: ni, t: 'open' })
+        if (nr !== -1) cands.push({ i: nr, t: 'open' })
+        if (nw !== -1) cands.push({ i: nw, t: 'open' })
+        if (ne !== -1) cands.push({ i: ne, t: 'else' })
+        if (nd !== -1) cands.push({ i: nd, t: 'end' })
+        if (!cands.length) break
+        cands.sort((a, b) => a.i - b.i)
+        const nx = cands[0]
+        if (nx.t === 'open') { depth++; idx = nx.i + 4 }
+        else if (nx.t === 'else' && depth === 1 && elseIdx === -1) { elseIdx = nx.i; idx = nx.i + 8 }
+        else if (nx.t === 'end') {
+          depth--
+          if (depth === 0) { endIdx = nx.i; break }
+          idx = nx.i + 7
+        } else { idx = nx.i + 4 }
+      }
+      if (endIdx === -1) break // unbalanced: leave rest untouched
+      const a = rest.slice(om.index + om[0].length, elseIdx !== -1 ? elseIdx : endIdx)
+      const b = elseIdx !== -1 ? rest.slice(elseIdx + 8, endIdx) : ''
+      const v = getDataByPath(path)
+      const truthy = Array.isArray(v) ? v.length > 0 : !!v
+      const keep = neg ? !truthy : truthy
+      result += rest.slice(0, om.index) + (keep ? a : b)
+      rest = rest.slice(endIdx + 7)
+    }
+    return result + rest
+  }
+  html = evalDataIfs(html)
   // Handle inline checked and true/false for Config
   html = html.replace(/\{\{if \.Data\.Config\.Enabled\}\}checked\{\{end\}\}/g, getDataByPath('Config.Enabled') ? 'checked' : '')
   html = html.replace(/\{\{if \.Data\.Config\.EscalationEnabled\}\}checked\{\{end\}\}/g, getDataByPath('Config.EscalationEnabled') ? 'checked' : '')
@@ -380,7 +428,7 @@ function evalPageTemplate(page: string, data: PageData): string {
     const accounts = normalizeAccounts(data.Data?.Accounts ?? [])
     let rowsHtml = ''
     if (accounts.length === 0) {
-      rowsHtml = `<tr><td colspan="5"><div class="px-5 py-12 text-center"><p class="text-sm text-gray-500">No accounts yet.</p><a href="/accounts" class="mt-3 inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-brand-600">Create account</a></div></td></tr>`
+      rowsHtml = `<tr><td colspan="5"><div class="px-5 py-12 text-center"><p class="text-sm text-gray-500">No accounts yet.</p><a href="/accounts?new=1" class="mt-3 inline-flex items-center justify-center rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">Create account</a></div></td></tr>`
     } else {
       rowsHtml = accounts
         .map(
@@ -396,12 +444,11 @@ function evalPageTemplate(page: string, data: PageData): string {
         .join('')
     }
     content = content.replace(/<tbody class="divide-y divide-gray-50">[\s\S]*?<\/tbody>/, `<tbody class="divide-y divide-gray-50">${rowsHtml}</tbody>`)
-    content = content.replace(/\{\{[^}]+\}\}/g, (m) => (m.includes('hx-') || m.includes('x-') ? m : ''))
   } else if (page === 'dashboard') {
     const accounts = normalizeAccounts(data.Data?.Accounts ?? [])
     let recentHtml = ''
     if (accounts.length === 0) {
-      recentHtml = `<div class="px-5 py-12 text-center"><p class="text-sm text-gray-500">No accounts yet.</p><a href="/accounts" class="mt-3 inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-brand-600">Create account</a></div>`
+      recentHtml = `<div class="px-5 py-12 text-center"><p class="text-sm text-gray-500">No accounts yet.</p><a href="/accounts?new=1" class="mt-3 inline-flex items-center justify-center rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">Create account</a></div>`
     } else {
       recentHtml = accounts
         .map(
@@ -513,17 +560,17 @@ function evalPageTemplate(page: string, data: PageData): string {
           <td class="px-4 py-3 text-right">
             <div class="flex items-center justify-end gap-1">
               <button @click="editUser = { id: '${escAttr(String(u.ID ?? (u as any).id ?? ''))}', username: '${escAttr(String(u.Username ?? (u as any).username ?? ''))}', email: '${escAttr(String((u as any).Email ?? (u as any).email ?? ''))}', roleID: '${escAttr(String(u.RoleID ?? (u as any).role_id ?? (u as any).roleID ?? ''))}', enabled: ${enabled ? 'true' : 'false'} }"
-                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Edit">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
               </button>
               <button @click="resetUser = { id: '${escAttr(String(u.ID ?? (u as any).id ?? ''))}', username: '${escAttr(String(u.Username ?? (u as any).username ?? ''))}' }"
-                class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Reset Password">
+                class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors" title="Reset Password">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               </button>
               <form method="POST" action="/admin/users/${escAttr(String(u.ID ?? (u as any).id ?? ''))}/delete" hx-boost="false"
                 onsubmit="return confirm('Delete user ${escAttr(String(u.Username ?? (u as any).username ?? ''))}? This cannot be undone.')">
                 <button type="submit"
-                  class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                  class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                 </button>
               </form>
@@ -648,13 +695,13 @@ function evalPageTemplate(page: string, data: PageData): string {
           <td class="px-4 py-3 text-right">
             <div class="flex items-center justify-end gap-1">
               <button @click="editRole = { id: '${escAttr(String((r as any).ID ?? (r as any).id ?? ''))}', name: '${escAttr(rName)}', description: '${escAttr(String(rDesc ?? ''))}', permissions: '${escAttr(permsStr)}', isBuiltin: ${isBuiltin ? 'true' : 'false'} }"
-                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Edit">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
               </button>
               ${!isBuiltin ? `<form method="POST" action="/admin/roles/${escAttr(String((r as any).ID ?? (r as any).id ?? ''))}/delete" hx-boost="false"
                 onsubmit="return confirm('Delete role ${escAttr(rName)}?')">
                 <button type="submit"
-                  class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                  class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                 </button>
               </form>` : ''}
@@ -826,7 +873,7 @@ function evalPageTemplate(page: string, data: PageData): string {
               const tagsCell = tagsArr.length ? `<div class="flex flex-wrap gap-1.5">${tagsArr.map((t:string)=>`<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">${esc(t)}</span>`).join('')}</div>` : '<span class="text-gray-300">—</span>'
               const createdAt = String(c.CreatedAt ?? c.created_at ?? '')
               const groupIds = cGroups.map((g:any)=> String(g.ID||g.id||'')).filter(Boolean)
-              return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3"><div class="flex items-center gap-2">${starHtml}<span class="font-medium text-gray-900">${nameCell}</span></div></td><td class="px-4 py-3 text-gray-700">${companyCell}</td><td class="px-4 py-3 font-mono text-gray-700">${phoneCell}</td><td class="px-4 py-3 text-gray-500">${emailCell}</td><td class="px-4 py-3">${groupsCell}</td><td class="px-4 py-3">${tagsCell}</td><td class="px-4 py-3 text-gray-500 whitespace-nowrap">${esc(timeAgo(createdAt))}</td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-1"><button @click="editContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}', phone: '${escAttr(String(c.Phone ?? c.phone ?? ''))}', email: '${escAttr(String(email))}', company: '${escAttr(String(c.Company ?? c.company ?? ''))}', notes: '${escAttr(String(c.Notes ?? c.notes ?? ''))}', tags: '${escAttr(tagsArr.join(','))}', starred: ${starred ? 'true' : 'false'}, group_ids: [${groupIds.map((gid:string)=>`'${escAttr(gid)}'`).join(',')}] }" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><button @click="deleteContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}' }" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></div></td></tr>`
+              return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3"><div class="flex items-center gap-2">${starHtml}<span class="font-medium text-gray-900">${nameCell}</span></div></td><td class="px-4 py-3 text-gray-700">${companyCell}</td><td class="px-4 py-3 font-mono text-gray-700">${phoneCell}</td><td class="px-4 py-3 text-gray-500">${emailCell}</td><td class="px-4 py-3">${groupsCell}</td><td class="px-4 py-3">${tagsCell}</td><td class="px-4 py-3 text-gray-500 whitespace-nowrap">${esc(timeAgo(createdAt))}</td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-1"><button @click="editContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}', phone: '${escAttr(String(c.Phone ?? c.phone ?? ''))}', email: '${escAttr(String(email))}', company: '${escAttr(String(c.Company ?? c.company ?? ''))}', notes: '${escAttr(String(c.Notes ?? c.notes ?? ''))}', tags: '${escAttr(tagsArr.join(','))}', starred: ${starred ? 'true' : 'false'}, group_ids: [${groupIds.map((gid:string)=>`'${escAttr(gid)}'`).join(',')}] }" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><button @click="deleteContact = { id: '${escAttr(id)}', name: '${escAttr(String(c.Name ?? c.name ?? ''))}' }" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></div></td></tr>`
             }).join('')
             let tableHtml = ifBlock
             tableHtml = tableHtml.replace(/<tbody[^>]*>[\s\S]*?<\/tbody>/, () => `<tbody class="divide-y divide-gray-100">${rowsHtml}</tbody>`)
@@ -986,7 +1033,7 @@ function evalPageTemplate(page: string, data: PageData): string {
               const priceCents = p.PriceCents ?? p.price_cents ?? p.PriceCents ?? 0
               const isDefault = !!(p.IsDefault ?? p.is_default)
               const divCents = Math.floor(priceCents/100)
-              return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3 font-mono text-xs text-gray-500">${esc(String(p.ID ?? p.id ?? ''))}</td><td class="px-4 py-3 font-medium text-gray-900">${esc(String(p.Name ?? p.name ?? ''))}</td><td class="px-4 py-3 text-gray-700">$${divCents}/mo</td><td class="px-4 py-3 text-gray-700">${daily===0?'∞':daily}</td><td class="px-4 py-3 text-gray-700">${maxAccts===0?'∞':maxAccts}</td><td class="px-4 py-3"><div class="flex gap-1 flex-wrap">${apiAccess?'<span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-700">API</span>':''}${mcpAccess?'<span class="px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700">MCP</span>':''}${webhooks?'<span class="px-1.5 py-0.5 rounded text-xs bg-amber-100 text-amber-700">Hooks</span>':''}${copilot?'<span class="px-1.5 py-0.5 rounded text-xs bg-violet-100 text-violet-700">Copilot</span>':''}${autopilot?'<span class="px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700">Autopilot</span>':''}</div></td><td class="px-4 py-3">${isDefault?'<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Yes</span>':'<span class="text-gray-300">—</span>'}</td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-1"><button @click="editPlan = { id: '${escAttr(String(p.ID ?? p.id ?? ''))}', name: '${escAttr(String(p.Name ?? p.name ?? ''))}', description: '${escAttr(String(p.Description ?? p.description ?? ''))}', priceCents: ${priceCents}, dailyMessages: ${daily}, maxAccounts: ${maxAccts}, apiAccess: ${apiAccess}, mcpAccess: ${mcpAccess}, webhooks: ${webhooks}, copilot: ${copilot}, autopilot: ${autopilot}, isDefault: ${isDefault} }" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><form method="POST" action="/admin/billing/plans/${escAttr(String(p.ID ?? p.id ?? ''))}/delete" hx-boost="false" onsubmit="return confirm('Delete plan ${escAttr(String(p.Name ?? p.name ?? ''))}? Plans with active subscriptions cannot be deleted.')"><button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></form></div></td></tr>`
+              return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3 font-mono text-xs text-gray-500">${esc(String(p.ID ?? p.id ?? ''))}</td><td class="px-4 py-3 font-medium text-gray-900">${esc(String(p.Name ?? p.name ?? ''))}</td><td class="px-4 py-3 text-gray-700">$${divCents}/mo</td><td class="px-4 py-3 text-gray-700">${daily===0?'∞':daily}</td><td class="px-4 py-3 text-gray-700">${maxAccts===0?'∞':maxAccts}</td><td class="px-4 py-3"><div class="flex gap-1 flex-wrap">${apiAccess?'<span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-700">API</span>':''}${mcpAccess?'<span class="px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700">MCP</span>':''}${webhooks?'<span class="px-1.5 py-0.5 rounded text-xs bg-amber-100 text-amber-700">Hooks</span>':''}${copilot?'<span class="px-1.5 py-0.5 rounded text-xs bg-violet-100 text-violet-700">Copilot</span>':''}${autopilot?'<span class="px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700">Autopilot</span>':''}</div></td><td class="px-4 py-3">${isDefault?'<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Yes</span>':'<span class="text-gray-300">—</span>'}</td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-1"><button @click="editPlan = { id: '${escAttr(String(p.ID ?? p.id ?? ''))}', name: '${escAttr(String(p.Name ?? p.name ?? ''))}', description: '${escAttr(String(p.Description ?? p.description ?? ''))}', priceCents: ${priceCents}, dailyMessages: ${daily}, maxAccounts: ${maxAccts}, apiAccess: ${apiAccess}, mcpAccess: ${mcpAccess}, webhooks: ${webhooks}, copilot: ${copilot}, autopilot: ${autopilot}, isDefault: ${isDefault} }" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><form method="POST" action="/admin/billing/plans/${escAttr(String(p.ID ?? p.id ?? ''))}/delete" hx-boost="false" onsubmit="return confirm('Delete plan ${escAttr(String(p.Name ?? p.name ?? ''))}? Plans with active subscriptions cannot be deleted.')"><button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></form></div></td></tr>`
             }).join('')
             let tableHtml = ifBlock
             tableHtml = tableHtml.replace(/<tbody[^>]*>[\s\S]*?<\/tbody>/, () => `<tbody class="divide-y divide-gray-100">${rowsHtml}</tbody>`)
@@ -1017,7 +1064,7 @@ function evalPageTemplate(page: string, data: PageData): string {
         if (status==='active') badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>'
         else if (status==='trialing') badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Trial</span>'
         else if (status==='canceled') badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Canceled</span>'
-        return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3 font-medium text-gray-900">${esc(username)}</td><td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${esc(planName)}</span></td><td class="px-4 py-3">${badge}</td><td class="px-4 py-3 text-gray-500 text-xs">${esc(period)}</td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-1"><button @click="assignSub = { userID: '${escAttr(String(s.UserID ?? s.user_id ?? ''))}', planID: '${escAttr(String(s.PlanID ?? s.plan_id ?? ''))}' }" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Change Plan"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><form method="POST" action="/admin/billing/subscriptions/${escAttr(String(s.UserID ?? s.user_id ?? ''))}/delete" hx-boost="false" onsubmit="return confirm('Remove subscription for ${escAttr(username)}?')"><button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></form></div></td></tr>`
+        return `<tr class="hover:bg-gray-50 transition-colors"><td class="px-4 py-3 font-medium text-gray-900">${esc(username)}</td><td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${esc(planName)}</span></td><td class="px-4 py-3">${badge}</td><td class="px-4 py-3 text-gray-500 text-xs">${esc(period)}</td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-1"><button @click="assignSub = { userID: '${escAttr(String(s.UserID ?? s.user_id ?? ''))}', planID: '${escAttr(String(s.PlanID ?? s.plan_id ?? ''))}' }" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Change Plan"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><form method="POST" action="/admin/billing/subscriptions/${escAttr(String(s.UserID ?? s.user_id ?? ''))}/delete" hx-boost="false" onsubmit="return confirm('Remove subscription for ${escAttr(username)}?')"><button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></form></div></td></tr>`
       }).join('')
       // Replace subscriptions table if present
       if (content.includes('{{range .Data.Subscriptions}}')) {
@@ -1101,9 +1148,9 @@ function evalPageTemplate(page: string, data: PageData): string {
               const acctsHtml = maxAccts === 0 ? `<strong>Unlimited</strong> accounts` : `Up to <strong>${maxAccts}</strong> account${maxAccts>1?'s':''}`
               const borderCls = isPro ? 'border-brand-500 ring-2 ring-brand-500' : 'border-gray-200'
               const badge = isPro ? `<div class="absolute -top-3 left-1/2 -translate-x-1/2"><span class="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold bg-brand-600 text-white">Most Popular</span></div>` : ''
-              const btn = id==='free' ? `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">Get started free</a>` : isPro ? `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors shadow-sm">Start with Professional</a>` : id==='business' ? `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">Start with Business</a>` : `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-lg border border-gray-900 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors">Contact sales</a>`
+              const btn = id==='free' ? `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-md border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">Get started free</a>` : isPro ? `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-md bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors shadow-sm">Start with Professional</a>` : id==='business' ? `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-md border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">Start with Business</a>` : `<a href="/register" class="block w-full text-center px-4 py-2.5 rounded-md border border-gray-900 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors">Contact sales</a>`
               const feat = (icon: string, ok: boolean, label: string, dim: string) => ok ? `<li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700">${label}</span></li>` : `<li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-gray-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg><span class="text-gray-400">${dim}</span></li>`
-              return `<div class="relative bg-white rounded-2xl border ${borderCls} p-6 flex flex-col anim-on-scroll">${badge}<div class="mb-5"><h3 class="text-lg font-bold text-gray-900">${name}</h3><p class="text-sm text-gray-500 mt-1">${desc}</p></div><div class="mb-6">${priceHtml}</div><ul class="space-y-3 mb-8 flex-1"><li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700">${dailyHtml}</span></li><li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700">${acctsHtml}</span></li>${feat('',api,'Full <strong>REST API</strong> access','REST API access')}${feat('',mcp,'<strong>MCP</strong> server access','MCP server access')}${feat('',wh,'Real-time <strong>webhooks</strong>','Webhooks')}${feat('',cop,'<strong>Copilot</strong> assistant','Copilot')}${feat('',auto,'<strong>Autopilot</strong> auto-reply','Autopilot')}${isEnt?`<li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700"><strong>Dedicated</strong> support</span></li>`:''}</ul><div>${btn}</div></div>`
+              return `<div class="relative bg-white rounded-xl border ${borderCls} p-6 flex flex-col anim-on-scroll">${badge}<div class="mb-5"><h3 class="text-lg font-bold text-gray-900">${name}</h3><p class="text-sm text-gray-500 mt-1">${desc}</p></div><div class="mb-6">${priceHtml}</div><ul class="space-y-3 mb-8 flex-1"><li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700">${dailyHtml}</span></li><li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700">${acctsHtml}</span></li>${feat('',api,'Full <strong>REST API</strong> access','REST API access')}${feat('',mcp,'<strong>MCP</strong> server access','MCP server access')}${feat('',wh,'Real-time <strong>webhooks</strong>','Webhooks')}${feat('',cop,'<strong>Copilot</strong> assistant','Copilot')}${feat('',auto,'<strong>Autopilot</strong> auto-reply','Autopilot')}${isEnt?`<li class="flex items-start gap-2.5 text-sm"><svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg><span class="text-gray-700"><strong>Dedicated</strong> support</span></li>`:''}</ul><div>${btn}</div></div>`
             }).join('')
             result += cards
           } else {
@@ -1134,14 +1181,62 @@ function evalPageTemplate(page: string, data: PageData): string {
     part = part.replace(/\{\{end\}\}\s*$/, '')
     html = html.replace(re, part)
   }
-  for (const c of components.length ? components : ['badge', 'stat-card', 'empty-state']) {
+  html = html.replace(/\{\{template "content"[^}]*\}\}/g, content)
+  // Components must inline AFTER the page content merge: calls live in
+  // page bodies, and anything unprocessed here is stripped as unknown below.
+  for (const c of components.length ? components : ['display/badge', 'display/stat-card', 'display/empty-state']) {
     const re = new RegExp(`\\{\\{template "component/${c}"[^}]*\\}\\}`, 'g')
     let comp = raw(`components/${c}.html`)
     comp = comp.replace(/\{\{define "[^"]*"\}\}/, '')
     comp = comp.replace(/\{\{end\}\}\s*$/, '')
-    html = html.replace(re, comp)
+    // dict support: {{template "component/x" (dict "k" "v" ...)}} substitutes
+    // {{.k}}, {{if eq .k "lit"}}..{{end}} and {{if .k}}..{{else}}..{{end}} per call.
+    // Without this, dict-components render empty (args were silently dropped).
+    html = html.replace(re, (call) => {
+      // dict values: "literal", .Data.Dotted.Path (resolved now), or bare token.
+      const resolveDataPath = (path: string): any => {
+        let cur: any = data.Data
+        for (const part of path.split('.')) {
+          if (cur == null) return ''
+          cur = cur[part]
+        }
+        return cur == null ? '' : cur
+      }
+      // Falsy: '', false, and the string 'false' (so .Data booleans behave).
+      const isTruthy = (v: any): boolean => v !== '' && v !== false && v !== 'false' && v != null
+      const dm = call.match(/\(dict([\s\S]*)\)\s*\}\}/)
+      const args: Record<string, any> = {}
+      if (dm) {
+        const toks = [...dm[1].matchAll(/"([^"]*)"|(\.Data\.[A-Za-z0-9_.]+)|(\S+)/g)]
+        for (let i = 0; i + 1 < toks.length; i += 2) {
+          const key = toks[i][1] ?? ''
+          if (!key) continue
+          const v = toks[i + 1]
+          args[key] = v[1] ?? (v[2] ? resolveDataPath(v[2].slice(6)) : (v[3] ?? ''))
+        }
+      }
+      let out = comp
+      out = out.replace(/\{\{\/\*[\s\S]*?\*\/\}\}/g, '')
+      // Innermost-first evaluation: single-pass regexes mis-pair markers when
+      // conditionals nest (e.g. eq-ifs inside an if/else), so resolve blocks
+      // containing no nested {{if}} repeatedly until none remain.
+      const condRe = /\{\{if (eq \.([A-Za-z0-9_]+) "([^"]*)"|(not )?\.([A-Za-z0-9_]+))\}\}((?:(?!\{\{if )[\s\S])*?)\{\{end\}\}/
+      for (let guard = 0; guard < 25; guard++) {
+        const m = out.match(condRe)
+        if (!m || m.index === undefined) break
+        const [, , eqKey, eqLit, notPrefix, key, inner] = m
+        const parts = inner.split('{{else}}')
+        const branch = parts.length > 1 ? parts.slice(0, -1).join('{{else}}') + '\x00' + parts[parts.length - 1] : inner
+        const [a, b] = branch.split('\x00')
+        let cond: boolean
+        if (eqKey !== undefined) cond = String(args[eqKey] ?? '') === eqLit
+        else cond = notPrefix ? !isTruthy(args[key]) : isTruthy(args[key])
+        out = out.slice(0, m.index) + (cond ? (a ?? inner) : (b ?? '')) + out.slice(m.index + m[0].length)
+      }
+      out = out.replace(/\{\{\.([A-Za-z0-9_]+)\}\}/g, (_m, k) => esc(args[k] == null ? '' : String(args[k])))
+      return out
+    })
   }
-  html = html.replace(/\{\{template "content"[^}]*\}\}/g, content)
   const repl: Array<[RegExp, string]> = [
     [/\{\{\.Title\}\}/g, esc(data.Title)],
     [/\{\{\.Heading\}\}/g, esc(data.Heading ?? '')],

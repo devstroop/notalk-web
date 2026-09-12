@@ -1,18 +1,18 @@
 {{define "content"}}
-<div x-data="{ showCreate: false, editContact: null, deleteContact: null, showCreateGroup: false, editGroup: null, deleteGroup: null }" class="space-y-6">
+<div x-data="{ editContact: null, deleteContact: null, editGroup: null, deleteGroup: null }" class="space-y-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
       <h3 class="text-lg font-semibold text-gray-900">Contacts</h3>
       <p class="text-sm text-gray-500">Lean address book — only ID is required (hidden). {{if .Data.Total}}<span class="font-medium text-gray-700">{{.Data.Total}} total</span>{{end}}</p>
     </div>
     <div class="flex items-center gap-2">
-      <button @click="showCreateGroup = true"
-        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50">
+      <button @click="$refs.createGroupModal.showModal()"
+        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>
         New Group
       </button>
-      <button @click="showCreate = true"
-        class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-xl hover:bg-brand-600 shadow-sm hover:shadow-md transition-all">
+      <button @click="$refs.createContactModal.showModal()"
+        class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 shadow-sm hover:shadow-md transition-all">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
         New Contact
       </button>
@@ -21,7 +21,7 @@
 
   <!-- Groups bar -->
   {{if .Data.Groups}}
-  <div class="bg-white rounded-xl border border-gray-200 p-3">
+  <div class="bg-white rounded-lg border border-gray-200 p-3">
     <div class="flex flex-wrap items-center gap-2">
       <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-2">Groups:</span>
       <a href="/contacts" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border {{if not .Data.GroupFilter}}bg-gray-900 text-white border-gray-900{{else}}bg-white text-gray-600 border-gray-200 hover:bg-gray-50{{end}}">All</a>
@@ -35,46 +35,46 @@
     <!-- Groups management -->
     <div class="mt-3 flex flex-wrap gap-2">
       {{range .Data.Groups}}
-      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-md border border-gray-200">
         <span class="w-3 h-3 rounded-full" style="background: {{.Color}}"></span>
         <span class="text-xs font-medium text-gray-700">{{.Name}}</span>
         {{if .Description}}<span class="text-xs text-gray-400">· {{.Description}}</span>{{end}}
-        <button @click="editGroup = { id: '{{.ID}}', name: '{{.Name}}', description: '{{.Description}}', color: '{{.Color}}' }" class="ml-1 p-1 text-gray-400 hover:text-blue-600"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
-        <button @click="deleteGroup = { id: '{{.ID}}', name: '{{.Name}}' }" class="p-1 text-gray-400 hover:text-red-600"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg></button>
+        <button @click="editGroup = { id: '{{.ID}}', name: '{{.Name}}', description: '{{.Description}}', color: '{{.Color}}' }; $nextTick(() => $refs.editGroupModal.showModal())" class="ml-1 p-1 text-gray-400 hover:text-blue-600"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+        <button @click="deleteGroup = { id: '{{.ID}}', name: '{{.Name}}' }; $nextTick(() => $refs.deleteGroupModal.showModal())" class="p-1 text-gray-400 hover:text-red-600"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg></button>
       </div>
       {{end}}
     </div>
   </div>
   {{else}}
-  <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
+  <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
     <p class="text-sm text-gray-500">No groups yet. Create a group to organize contacts.</p>
-    <button @click="showCreateGroup = true" class="mt-2 text-sm font-medium text-brand-600 hover:text-brand-700">Create first group →</button>
+    <button @click="$refs.createGroupModal.showModal()" class="mt-2 text-sm font-medium text-brand-600 hover:text-brand-700">Create first group →</button>
   </div>
   {{end}}
 
   <!-- Search -->
-  <form method="GET" action="/contacts" class="flex flex-col sm:flex-row gap-3 bg-white rounded-xl border border-gray-200 p-3">
+  <form method="GET" action="/contacts" class="flex flex-col sm:flex-row gap-3 bg-white rounded-lg border border-gray-200 p-3">
     <div class="relative flex-1">
       <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      <input type="text" name="q" value="{{.Data.Q}}" placeholder="Search name, phone, email, company, tags…" class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+      <input type="text" name="q" value="{{.Data.Q}}" placeholder="Search name, phone, email, company, tags…" class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
     </div>
     {{if .Data.GroupFilter}}<input type="hidden" name="group_id" value="{{.Data.GroupFilter}}">{{end}}
-    <button type="submit" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Search</button>
+    <button type="submit" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">Search</button>
     {{if .Data.Q}}<a href="/contacts{{if .Data.GroupFilter}}?group_id={{.Data.GroupFilter}}{{end}}" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 self-center">Clear</a>{{end}}
   </form>
 
   <!-- Import CSV -->
-  <div class="bg-white rounded-xl border border-gray-200 p-4">
+  <div class="bg-white rounded-lg border border-gray-200 p-4">
     <h4 class="text-sm font-medium text-gray-900 mb-2">Bulk import</h4>
     <form method="POST" action="/contacts/import" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-      <input type="file" name="file" accept=".csv" required class="block w-full sm:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand-50 file:text-brand-800 hover:file:bg-brand-100">
-      <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-black transition-colors">Import CSV</button>
+      <input type="file" name="file" accept=".csv" required class="block w-full sm:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-brand-50 file:text-brand-800 hover:file:bg-brand-100">
+      <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-md hover:bg-black transition-colors">Import CSV</button>
       <span class="text-xs text-gray-400">CSV: phone,name (header auto-detected, max 5k rows)</span>
     </form>
   </div>
 
   <!-- Contacts table — lean -->
-  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
     {{if .Data.Contacts}}
     <div class="overflow-x-auto">
     <table class="w-full text-sm">
@@ -119,12 +119,12 @@
           <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{timeAgo .CreatedAt}}</td>
           <td class="px-4 py-3 text-right">
             <div class="flex items-center justify-end gap-1">
-              <button @click="editContact = { id: '{{.ID}}', name: '{{.Name}}', phone: '{{.Phone}}', email: '{{.Email}}', company: '{{.Company}}', notes: '{{.Notes}}', tags: '{{range $i, $t := .Tags}}{{if $i}},{{end}}{{$t}}{{end}}', starred: {{if .Starred}}true{{else}}false{{end}}, group_ids: [{{range $i, $g := .Groups}}{{if $i}},{{end}}'{{$g.ID}}'{{end}}] }"
-                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+              <button @click="editContact = { id: '{{.ID}}', name: '{{.Name}}', phone: '{{.Phone}}', email: '{{.Email}}', company: '{{.Company}}', notes: '{{.Notes}}', tags: '{{range $i, $t := .Tags}}{{if $i}},{{end}}{{$t}}{{end}}', starred: {{if .Starred}}true{{else}}false{{end}}, group_ids: [{{range $i, $g := .Groups}}{{if $i}},{{end}}'{{$g.ID}}'{{end}}] }; $nextTick(() => $refs.editContactModal.showModal())"
+                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Edit">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
               </button>
-              <button @click="deleteContact = { id: '{{.ID}}', name: '{{.Name}}' }"
-                class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+              <button @click="deleteContact = { id: '{{.ID}}', name: '{{.Name}}' }; $nextTick(() => $refs.deleteContactModal.showModal())"
+                class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
               </button>
             </div>
@@ -141,29 +141,24 @@
       </div>
       <p class="text-sm font-medium text-gray-700">No contacts yet</p>
       <p class="text-sm text-gray-500 mt-1">Only ID is required (auto-generated, hidden). Add optional fields as needed.</p>
-      <button @click="showCreate = true" class="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-xl hover:bg-brand-600">Add your first contact</button>
+      <button @click="$refs.createContactModal.showModal()" class="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">Add your first contact</button>
     </div>
     {{end}}
   </div>
 
   <!-- Create Contact Modal — lean with groups -->
-  <div x-show="showCreate" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="showCreate = false">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" @click.stop>
-      <div class="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 rounded-t-xl">
-        <h3 class="text-lg font-semibold text-gray-900">New Contact</h3>
-        <p class="text-xs text-gray-400 mt-1">Lean — only ID is required (hidden). Phone/email optional.</p>
-      </div>
-      <form method="POST" action="/contacts" class="px-6 py-4 space-y-4">
-        <div><label class="block text-xs font-medium text-gray-600 mb-1">Name <span class="text-gray-400 font-normal">(optional)</span></label><input type="text" name="name" maxlength="100" placeholder="Jane Doe" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+  {{template "component/overlays/dialog-open" (dict "id" "createContactModal" "xref" "createContactModal" "title" "New Contact" "desc" "Lean — only ID is required (hidden). Phone/email optional.")}}
+      <form method="POST" action="/contacts" class="space-y-4">
+        {{template "component/forms/input" (dict "label" "Name" "name" "name" "placeholder" "Jane Doe")}}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div><label class="block text-xs font-medium text-gray-600 mb-1">Phone <span class="text-gray-400">(optional)</span></label><input type="tel" name="phone" placeholder="+919876543210" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono"></div>
-          <div><label class="block text-xs font-medium text-gray-600 mb-1">Email <span class="text-gray-400">(optional)</span></label><input type="email" name="email" placeholder="jane@example.com" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+          {{template "component/forms/input" (dict "label" "Phone" "name" "phone" "type" "tel" "placeholder" "+919876543210")}}
+          {{template "component/forms/input" (dict "label" "Email" "name" "email" "type" "email" "placeholder" "jane@example.com")}}
         </div>
-        <div><label class="block text-xs font-medium text-gray-600 mb-1">Company <span class="text-gray-400">(optional)</span></label><input type="text" name="company" placeholder="Acme Inc." class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+        {{template "component/forms/input" (dict "label" "Company" "name" "company" "placeholder" "Acme Inc.")}}
         {{if .Data.Groups}}
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1">Groups</label>
-          <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto border border-gray-200 rounded-lg p-2">
+          <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto border border-gray-200 rounded-md p-2">
             {{range .Data.Groups}}
             <label class="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" name="group_ids" value="{{.ID}}" class="rounded border-gray-300">
@@ -174,37 +169,32 @@
           </div>
         </div>
         {{end}}
-        <div><label class="block text-xs font-medium text-gray-600 mb-1">Tags <span class="text-gray-400">(comma-separated, optional)</span></label><input type="text" name="tags" placeholder="vip, customer" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
-        <div class="flex items-center gap-2"><input type="checkbox" name="starred" id="create-starred" class="rounded border-gray-300"><label for="create-starred" class="text-sm text-gray-700">Starred</label></div>
-        <div><label class="block text-xs font-medium text-gray-600 mb-1">Notes <span class="text-gray-400">(optional)</span></label><textarea name="notes" rows="2" placeholder="VIP, prefers email…" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></textarea></div>
+        {{template "component/forms/input" (dict "label" "Tags" "name" "tags" "placeholder" "vip, customer" "hint" "Comma-separated, optional.")}}
+        {{template "component/forms/checkbox" (dict "label" "Starred" "name" "starred")}}
+        {{template "component/forms/textarea" (dict "label" "Notes" "name" "notes" "rows" "2" "placeholder" "VIP, prefers email…")}}
         <div class="flex justify-end gap-3 pt-2 pb-2">
-          <button type="button" @click="showCreate = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-          <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">Create</button>
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
+          {{template "component/forms/button" (dict "text" "Create" "type" "submit")}}
         </div>
       </form>
-    </div>
-  </div>
+  {{template "component/overlays/dialog-close"}}
 
   <!-- Edit Contact Modal — lean with groups -->
   <template x-if="editContact">
-  <div x-show="editContact" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="editContact = null">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" @click.stop>
-      <div class="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 rounded-t-xl">
-        <h3 class="text-lg font-semibold text-gray-900">Edit Contact</h3>
+  {{template "component/overlays/dialog-open" (dict "id" "editContactModal" "xref" "editContactModal" "title" "Edit Contact")}}
+      <form method="POST" :action="'/contacts/' + editContact.id + '/update'" class="space-y-4">
         <p class="text-xs text-gray-400">ID <span class="font-mono" x-text="editContact.id"></span> — hidden, immutable</p>
-      </div>
-      <form method="POST" :action="'/contacts/' + editContact.id + '/update'" class="px-6 py-4 space-y-4">
-        <div><label class="block text-xs font-medium text-gray-600 mb-1">Name</label><input type="text" name="name" x-model="editContact.name" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+        {{template "component/forms/input" (dict "label" "Name" "name" "name" "xmodel" "editContact.name")}}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div><label class="block text-xs font-medium text-gray-600 mb-1">Phone</label><input type="tel" name="phone" x-model="editContact.phone" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono"></div>
-          <div><label class="block text-xs font-medium text-gray-600 mb-1">Email</label><input type="email" name="email" x-model="editContact.email" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+          {{template "component/forms/input" (dict "label" "Phone" "name" "phone" "type" "tel" "xmodel" "editContact.phone")}}
+          {{template "component/forms/input" (dict "label" "Email" "name" "email" "type" "email" "xmodel" "editContact.email")}}
         </div>
-        <div><label class="block text-xs font-medium text-gray-600 mb-1">Company</label><input type="text" name="company" x-model="editContact.company" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+        {{template "component/forms/input" (dict "label" "Company" "name" "company" "xmodel" "editContact.company")}}
         <!-- Groups checkboxes -->
         {{if .Data.Groups}}
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1">Groups</label>
-          <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto border border-gray-200 rounded-lg p-2">
+          <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto border border-gray-200 rounded-md p-2">
             {{range .Data.Groups}}
             <label class="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" name="group_ids" value="{{.ID}}" :checked="editContact.group_ids && editContact.group_ids.includes('{{.ID}}')" @change="if($event.target.checked){ if(!editContact.group_ids) editContact.group_ids=[]; if(!editContact.group_ids.includes('{{.ID}}')) editContact.group_ids.push('{{.ID}}') } else { editContact.group_ids = (editContact.group_ids||[]).filter(id=>id!=='{{.ID}}') }">
@@ -219,74 +209,61 @@
           </template>
         </div>
         {{end}}
-        <div><label class="block text-xs font-medium text-gray-600 mb-1">Tags</label><input type="text" name="tags" x-model="editContact.tags" placeholder="vip, customer" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
-        <div class="flex items-center gap-2"><input type="checkbox" name="starred" :checked="editContact.starred" @change="editContact.starred = $event.target.checked" class="rounded border-gray-300"><label class="text-sm text-gray-700">Starred</label></div>
-        <div><label class="block text-xs font-medium text-gray-600 mb-1">Notes</label><textarea name="notes" rows="2" x-model="editContact.notes" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></textarea></div>
+        {{template "component/forms/input" (dict "label" "Tags" "name" "tags" "placeholder" "vip, customer" "xmodel" "editContact.tags")}}
+        {{template "component/forms/checkbox" (dict "label" "Starred" "name" "starred" "xchecked" "editContact.starred")}}
+        {{template "component/forms/textarea" (dict "label" "Notes" "name" "notes" "rows" "2" "xmodel" "editContact.notes")}}
         <div class="flex justify-end gap-3 pt-2 pb-2">
-          <button type="button" @click="editContact = null" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-          <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">Save</button>
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "editContact = null")}}
+          {{template "component/forms/button" (dict "text" "Save" "type" "submit")}}
         </div>
       </form>
-    </div>
-  </div>
+  {{template "component/overlays/dialog-close"}}
   </template>
 
   <!-- Delete Contact Confirm -->
-  <div x-show="deleteContact" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="deleteContact = null">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" @click.stop>
-      <h3 class="text-lg font-semibold text-gray-900">Delete contact?</h3>
+  {{template "component/overlays/dialog-open" (dict "id" "deleteContactModal" "xref" "deleteContactModal" "title" "Delete contact?" "tone" "danger")}}
       <p class="text-sm text-gray-500">Delete <strong x-text="deleteContact?.name || deleteContact?.id"></strong>. This cannot be undone.</p>
       <form method="POST" :action="'/contacts/' + deleteContact?.id + '/delete'" class="flex justify-end gap-3 pt-2">
-        <button type="button" @click="deleteContact = null" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Delete</button>
+        {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "deleteContact = null")}}
+        {{template "component/forms/button" (dict "text" "Delete" "type" "submit" "variant" "destructive")}}
       </form>
-    </div>
-  </div>
+  {{template "component/overlays/dialog-close"}}
 
   <!-- Create Group Modal -->
-  <div x-show="showCreateGroup" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="showCreateGroup = false">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" @click.stop>
-      <h3 class="text-lg font-semibold text-gray-900">New Group</h3>
+  {{template "component/overlays/dialog-open" (dict "id" "createGroupModal" "xref" "createGroupModal" "title" "New Group")}}
       <form method="POST" action="/contact-groups" class="space-y-4">
-        <div><label class="block text-xs font-medium text-gray-600 mb-1">Name *</label><input type="text" name="name" required maxlength="50" placeholder="VIP, Leads…" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
-        <div><label class="block text-xs font-medium text-gray-600 mb-1">Description</label><input type="text" name="description" placeholder="High value customers" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+        {{template "component/forms/input" (dict "label" "Name" "name" "name" "required" "1" "placeholder" "VIP, Leads…")}}
+        {{template "component/forms/input" (dict "label" "Description" "name" "description" "placeholder" "High value customers")}}
         <div><label class="block text-xs font-medium text-gray-600 mb-1">Color</label><input type="color" name="color" value="#6b7280" class="w-16 h-8 rounded border border-gray-300 p-1"></div>
         <div class="flex justify-end gap-3">
-          <button type="button" @click="showCreateGroup = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-          <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">Create</button>
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1")}}
+          {{template "component/forms/button" (dict "text" "Create" "type" "submit")}}
         </div>
       </form>
-    </div>
-  </div>
+  {{template "component/overlays/dialog-close"}}
 
   <!-- Edit Group Modal -->
   <template x-if="editGroup">
-  <div x-show="editGroup" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="editGroup = null">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" @click.stop>
-      <h3 class="text-lg font-semibold text-gray-900">Edit Group</h3>
+  {{template "component/overlays/dialog-open" (dict "id" "editGroupModal" "xref" "editGroupModal" "title" "Edit Group")}}
       <form method="POST" :action="'/contact-groups/' + editGroup.id + '/update'" class="space-y-4">
-        <div><label class="block text-xs font-medium text-gray-600 mb-1">Name</label><input type="text" name="name" x-model="editGroup.name" required maxlength="50" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
-        <div><label class="block text-xs font-medium text-gray-600 mb-1">Description</label><input type="text" name="description" x-model="editGroup.description" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
+        {{template "component/forms/input" (dict "label" "Name" "name" "name" "required" "1" "xmodel" "editGroup.name")}}
+        {{template "component/forms/input" (dict "label" "Description" "name" "description" "xmodel" "editGroup.description")}}
         <div><label class="block text-xs font-medium text-gray-600 mb-1">Color</label><input type="color" name="color" x-model="editGroup.color" class="w-full h-8 rounded border border-gray-300 p-1"></div>
         <div class="flex justify-end gap-3">
-          <button type="button" @click="editGroup = null" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-          <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">Save</button>
+          {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "editGroup = null")}}
+          {{template "component/forms/button" (dict "text" "Save" "type" "submit")}}
         </div>
       </form>
-    </div>
-  </div>
+  {{template "component/overlays/dialog-close"}}
   </template>
 
   <!-- Delete Group Confirm -->
-  <div x-show="deleteGroup" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 !mt-0 p-4" @click.self="deleteGroup = null">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" @click.stop>
-      <h3 class="text-lg font-semibold text-gray-900">Delete group?</h3>
+  {{template "component/overlays/dialog-open" (dict "id" "deleteGroupModal" "xref" "deleteGroupModal" "title" "Delete group?" "tone" "danger")}}
       <p class="text-sm text-gray-500">Delete group <strong x-text="deleteGroup?.name"></strong>? Contacts will remain, only the group label is removed.</p>
       <form method="POST" :action="'/contact-groups/' + deleteGroup?.id + '/delete'" class="flex justify-end gap-3 pt-2">
-        <button type="button" @click="deleteGroup = null" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Delete</button>
+        {{template "component/forms/button" (dict "text" "Cancel" "variant" "secondary" "close" "1" "xclick" "deleteGroup = null")}}
+        {{template "component/forms/button" (dict "text" "Delete" "type" "submit" "variant" "destructive")}}
       </form>
-    </div>
-  </div>
+  {{template "component/overlays/dialog-close"}}
 </div>
 {{end}}

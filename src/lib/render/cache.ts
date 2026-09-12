@@ -20,7 +20,7 @@ export function listBundled(dir: string): string[] {
   for (const k of Object.keys(bundledTemplates)) {
     if (k.startsWith(prefix)) {
       const rest = k.slice(prefix.length)
-      if (rest && !rest.includes('/') && rest.endsWith('.html')) out.push(rest.replace('.html', ''))
+      if (rest && rest.endsWith('.html')) out.push(rest.replace('.html', ''))
     }
   }
   return out.sort()

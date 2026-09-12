@@ -1,0 +1,8 @@
+{{define "component/forms/switch"}}
+{{/* Usage: {{template "component/forms/switch" (dict "name" "enabled" "checked" "1" "xmodel" "on" (.Data booleans work: false hides the check))}} — replicates the peer-toggle idiom (hidden 0-fallback included for plain POST forms). tone: violet for themed sections. */}}
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+  <input type="checkbox" name="{{.name}}" value="1"{{if .checked}} checked{{end}}{{if .xmodel}} x-model="{{.xmodel}}"{{end}} class="sr-only peer">
+  <div class="w-10 h-6 bg-gray-200 peer-focus:ring-2 {{if eq .tone "violet"}}peer-focus:ring-violet-300{{else}}peer-focus:ring-brand-100{{end}} rounded-full peer peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all {{if eq .tone "violet"}}peer-checked:bg-violet-600{{else}}peer-checked:bg-brand-500{{end}}"></div>
+  <input type="hidden" name="{{.name}}" value="0">
+</label>
+{{end}}

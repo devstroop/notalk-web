@@ -1,21 +1,21 @@
 {{define "content"}}
 <div class="space-y-6">
   <!-- Welcome header -->
-  <div class="bg-gradient-to-r from-brand-800 to-brand-900 rounded-2xl p-6 sm:p-8 text-white">
+  <div class="bg-gradient-to-r from-brand-800 to-brand-900 rounded-xl p-6 sm:p-8 text-white">
     <h2 class="text-xl sm:text-2xl font-bold">Welcome back{{if .Identity}}, {{.Identity.Username}}{{end}}</h2>
     <p class="mt-1 text-brand-100 text-sm">Here's an overview of your WhatsApp accounts.</p>
   </div>
 
   <!-- Stats -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-    {{template "component/stat-card" (dict "label" "Total Accounts" "value" .Data.TotalAccounts "icon" "accounts" "color" "brand")}}
-    {{template "component/stat-card" (dict "label" "Connected" "value" .Data.Connected "icon" "connected" "color" "green")}}
-    {{template "component/stat-card" (dict "label" "Disconnected" "value" .Data.Disconnected "icon" "disconnected" "color" "yellow")}}
-    {{template "component/stat-card" (dict "label" "Users" "value" .Data.TotalUsers "icon" "users" "color" "blue")}}
+    {{template "component/display/stat-card" (dict "label" "Total Accounts" "value" .Data.TotalAccounts "icon" "accounts" "color" "brand")}}
+    {{template "component/display/stat-card" (dict "label" "Connected" "value" .Data.Connected "icon" "connected" "color" "green")}}
+    {{template "component/display/stat-card" (dict "label" "Disconnected" "value" .Data.Disconnected "icon" "disconnected" "color" "yellow")}}
+    {{template "component/display/stat-card" (dict "label" "Users" "value" .Data.TotalUsers "icon" "users" "color" "blue")}}
   </div>
 
   <!-- Recent accounts -->
-  <div class="bg-white rounded-xl border border-gray-200">
+  <div class="bg-white rounded-lg border border-gray-200">
     <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
       <h3 class="font-semibold text-gray-900">Recent Accounts</h3>
       <a href="/accounts" class="text-sm text-brand-800 hover:text-brand-900 font-medium">View all →</a>
@@ -43,7 +43,7 @@
       {{else}}
       <div class="px-5 py-12 text-center">
         <p class="text-sm text-gray-500">No accounts yet.</p>
-        <a href="/accounts" class="mt-3 inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">Create account</a>
+        <a href="/accounts" class="mt-3 inline-flex items-center justify-center rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">Create account</a>
       </div>
       {{end}}
     </div>
