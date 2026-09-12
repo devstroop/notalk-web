@@ -12,5 +12,5 @@
       {{if eq .variant "outline"}}border border-input bg-background hover:bg-accent{{end}}
       {{if eq .variant "ghost"}}hover:bg-accent text-foreground{{end}}
       {{if eq .variant "destructive"}}bg-destructive text-destructive-foreground hover:bg-destructive/90{{end}}
-      {{if not .variant}}bg-primary text-primary-foreground hover:bg-brand-600{{end}}{{if .loading}} btn-loading{{end}}">{{if .loading}}<svg class="btn-spinner hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>{{end}}{{.text}}</button>{{end}}
+      {{if not .variant}}bg-primary text-primary-foreground hover:bg-brand-600{{end}}{{if .loading}} btn-loading{{end}}"{{if .xclick}} @click="{{.xclick}}"{{end}}{{if .close}} data-dialog-close="true"{{end}}>{{if .loading}}<svg class="btn-spinner hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>{{end}}{{.text}}</button>{{end}}
 {{end}}

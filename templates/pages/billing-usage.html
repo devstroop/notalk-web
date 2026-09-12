@@ -1,11 +1,7 @@
 {{define "content"}}
 <div class="space-y-6">
 
-  <!-- Header -->
-  <div>
-    <h3 class="text-lg font-semibold text-gray-900">Usage &amp; Analytics</h3>
-    <p class="text-sm text-gray-500">Messages sent today by each user across all accounts.</p>
-  </div>
+  {{template "component/page-head" (dict "title" "Usage & Analytics" "desc" "Messages sent today by each user across all accounts.")}}
 
   <!-- Summary cards -->
   <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">

@@ -396,7 +396,6 @@ function evalPageTemplate(page: string, data: PageData): string {
         .join('')
     }
     content = content.replace(/<tbody class="divide-y divide-gray-50">[\s\S]*?<\/tbody>/, `<tbody class="divide-y divide-gray-50">${rowsHtml}</tbody>`)
-    content = content.replace(/\{\{[^}]+\}\}/g, (m) => (m.includes('hx-') || m.includes('x-') ? m : ''))
   } else if (page === 'dashboard') {
     const accounts = normalizeAccounts(data.Data?.Accounts ?? [])
     let recentHtml = ''
