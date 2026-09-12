@@ -7,12 +7,12 @@
     </div>
     <div class="flex items-center gap-2">
       <button @click="$refs.createGroupModal.showModal()"
-        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50">
+        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>
         New Group
       </button>
       <button @click="$refs.createContactModal.showModal()"
-        class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-xl hover:bg-brand-600 shadow-sm hover:shadow-md transition-all">
+        class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 shadow-sm hover:shadow-md transition-all">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
         New Contact
       </button>
@@ -21,7 +21,7 @@
 
   <!-- Groups bar -->
   {{if .Data.Groups}}
-  <div class="bg-white rounded-xl border border-gray-200 p-3">
+  <div class="bg-white rounded-lg border border-gray-200 p-3">
     <div class="flex flex-wrap items-center gap-2">
       <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-2">Groups:</span>
       <a href="/contacts" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border {{if not .Data.GroupFilter}}bg-gray-900 text-white border-gray-900{{else}}bg-white text-gray-600 border-gray-200 hover:bg-gray-50{{end}}">All</a>
@@ -35,7 +35,7 @@
     <!-- Groups management -->
     <div class="mt-3 flex flex-wrap gap-2">
       {{range .Data.Groups}}
-      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-md border border-gray-200">
         <span class="w-3 h-3 rounded-full" style="background: {{.Color}}"></span>
         <span class="text-xs font-medium text-gray-700">{{.Name}}</span>
         {{if .Description}}<span class="text-xs text-gray-400">· {{.Description}}</span>{{end}}
@@ -46,35 +46,35 @@
     </div>
   </div>
   {{else}}
-  <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
+  <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
     <p class="text-sm text-gray-500">No groups yet. Create a group to organize contacts.</p>
     <button @click="$refs.createGroupModal.showModal()" class="mt-2 text-sm font-medium text-brand-600 hover:text-brand-700">Create first group →</button>
   </div>
   {{end}}
 
   <!-- Search -->
-  <form method="GET" action="/contacts" class="flex flex-col sm:flex-row gap-3 bg-white rounded-xl border border-gray-200 p-3">
+  <form method="GET" action="/contacts" class="flex flex-col sm:flex-row gap-3 bg-white rounded-lg border border-gray-200 p-3">
     <div class="relative flex-1">
       <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      <input type="text" name="q" value="{{.Data.Q}}" placeholder="Search name, phone, email, company, tags…" class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+      <input type="text" name="q" value="{{.Data.Q}}" placeholder="Search name, phone, email, company, tags…" class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
     </div>
     {{if .Data.GroupFilter}}<input type="hidden" name="group_id" value="{{.Data.GroupFilter}}">{{end}}
-    <button type="submit" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Search</button>
+    <button type="submit" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">Search</button>
     {{if .Data.Q}}<a href="/contacts{{if .Data.GroupFilter}}?group_id={{.Data.GroupFilter}}{{end}}" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 self-center">Clear</a>{{end}}
   </form>
 
   <!-- Import CSV -->
-  <div class="bg-white rounded-xl border border-gray-200 p-4">
+  <div class="bg-white rounded-lg border border-gray-200 p-4">
     <h4 class="text-sm font-medium text-gray-900 mb-2">Bulk import</h4>
     <form method="POST" action="/contacts/import" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-      <input type="file" name="file" accept=".csv" required class="block w-full sm:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand-50 file:text-brand-800 hover:file:bg-brand-100">
-      <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-black transition-colors">Import CSV</button>
+      <input type="file" name="file" accept=".csv" required class="block w-full sm:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-brand-50 file:text-brand-800 hover:file:bg-brand-100">
+      <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-md hover:bg-black transition-colors">Import CSV</button>
       <span class="text-xs text-gray-400">CSV: phone,name (header auto-detected, max 5k rows)</span>
     </form>
   </div>
 
   <!-- Contacts table — lean -->
-  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
     {{if .Data.Contacts}}
     <div class="overflow-x-auto">
     <table class="w-full text-sm">
@@ -120,11 +120,11 @@
           <td class="px-4 py-3 text-right">
             <div class="flex items-center justify-end gap-1">
               <button @click="editContact = { id: '{{.ID}}', name: '{{.Name}}', phone: '{{.Phone}}', email: '{{.Email}}', company: '{{.Company}}', notes: '{{.Notes}}', tags: '{{range $i, $t := .Tags}}{{if $i}},{{end}}{{$t}}{{end}}', starred: {{if .Starred}}true{{else}}false{{end}}, group_ids: [{{range $i, $g := .Groups}}{{if $i}},{{end}}'{{$g.ID}}'{{end}}] }; $nextTick(() => $refs.editContactModal.showModal())"
-                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Edit">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
               </button>
               <button @click="deleteContact = { id: '{{.ID}}', name: '{{.Name}}' }; $nextTick(() => $refs.deleteContactModal.showModal())"
-                class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
               </button>
             </div>
@@ -141,7 +141,7 @@
       </div>
       <p class="text-sm font-medium text-gray-700">No contacts yet</p>
       <p class="text-sm text-gray-500 mt-1">Only ID is required (auto-generated, hidden). Add optional fields as needed.</p>
-      <button @click="$refs.createContactModal.showModal()" class="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-xl hover:bg-brand-600">Add your first contact</button>
+      <button @click="$refs.createContactModal.showModal()" class="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">Add your first contact</button>
     </div>
     {{end}}
   </div>
@@ -158,7 +158,7 @@
         {{if .Data.Groups}}
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1">Groups</label>
-          <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto border border-gray-200 rounded-lg p-2">
+          <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto border border-gray-200 rounded-md p-2">
             {{range .Data.Groups}}
             <label class="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" name="group_ids" value="{{.ID}}" class="rounded border-gray-300">
@@ -194,7 +194,7 @@
         {{if .Data.Groups}}
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1">Groups</label>
-          <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto border border-gray-200 rounded-lg p-2">
+          <div class="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto border border-gray-200 rounded-md p-2">
             {{range .Data.Groups}}
             <label class="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" name="group_ids" value="{{.ID}}" :checked="editContact.group_ids && editContact.group_ids.includes('{{.ID}}')" @change="if($event.target.checked){ if(!editContact.group_ids) editContact.group_ids=[]; if(!editContact.group_ids.includes('{{.ID}}')) editContact.group_ids.push('{{.ID}}') } else { editContact.group_ids = (editContact.group_ids||[]).filter(id=>id!=='{{.ID}}') }">

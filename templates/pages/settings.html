@@ -2,7 +2,7 @@
 <div x-data="{ section: 'general' }" class="flex gap-6 items-start">
 
   <!-- ── Sidebar nav ──────────────────────────────── -->
-  <aside class="w-52 shrink-0 bg-white rounded-xl border border-gray-200 overflow-hidden sticky top-4">
+  <aside class="w-52 shrink-0 bg-white rounded-lg border border-gray-200 overflow-hidden sticky top-4">
     <div class="px-4 py-3 border-b border-gray-100">
       <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Settings</p>
     </div>
@@ -48,7 +48,7 @@
 
       {{if .Data.User}}
       <!-- Profile info -->
-      <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+      <div class="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
         <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Profile</h4>
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
@@ -73,7 +73,7 @@
       </div>
 
       {{else}}
-      <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <div class="bg-white rounded-lg border border-gray-200 p-6">
         <p class="text-sm text-gray-500">You are authenticated as the <strong>system administrator</strong> via the secret key. User profile settings are not available for this identity.</p>
       </div>
       {{end}}
@@ -86,7 +86,7 @@
       {{template "component/page-head" (dict "title" "Account" "desc" "Manage your account password and security.")}}
 
       {{if .Data.User}}
-      <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+      <div class="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
         <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Change Password</h4>
         <form method="POST" action="/settings/password" class="space-y-4 max-w-md">
           {{template "component/input" (dict "label" "Current Password" "name" "current_password" "id" "current-acct" "type" "password" "required" "1" "autocomplete" "current-password")}}
@@ -96,7 +96,7 @@
         </form>
       </div>
       {{else}}
-      <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <div class="bg-white rounded-lg border border-gray-200 p-6">
         <p class="text-sm text-gray-500">You are authenticated as the <strong>system administrator</strong> via the secret key. User profile settings are not available for this identity.</p>
       </div>
       {{end}}
@@ -108,7 +108,7 @@
 
       {{template "component/page-head" (dict "title" "Appearance" "desc" "Customize application branding and display.")}}
 
-      <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <div class="bg-white rounded-lg border border-gray-200 p-6">
         <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-5">Branding</h4>
         <form method="POST" action="/settings/appearance" class="space-y-4 max-w-lg">
           {{template "component/input" (dict "label" "Application Name" "name" "app_name" "value" .Data.AppName "placeholder" "NoTalk" "hint" "Shown in the browser title bar and outgoing emails.")}}
@@ -126,7 +126,7 @@
 
       {{template "component/page-head" (dict "title" "Localization" "desc" "Regional formats used across the platform.")}}
 
-      <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <div class="bg-white rounded-lg border border-gray-200 p-6">
         <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-5">Regional Settings</h4>
         <form method="POST" action="/settings/localization" class="space-y-5 max-w-lg">
 
@@ -134,7 +134,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
             <select name="currency"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
               <option value="USD" {{if eq .Data.Currency "USD"}}selected{{end}}>USD — US Dollar ($)</option>
               <option value="INR" {{if eq .Data.Currency "INR"}}selected{{end}}>INR — Indian Rupee (₹)</option>
               <option value="EUR" {{if eq .Data.Currency "EUR"}}selected{{end}}>EUR — Euro (€)</option>
@@ -151,7 +151,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
             <select name="timezone"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
+              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-600">
               <option value="UTC"                 {{if eq .Data.Timezone "UTC"}}selected{{end}}>UTC</option>
               <option value="Asia/Kolkata"         {{if eq .Data.Timezone "Asia/Kolkata"}}selected{{end}}>Asia/Kolkata (IST +05:30)</option>
               <option value="America/New_York"     {{if eq .Data.Timezone "America/New_York"}}selected{{end}}>America/New_York (EST/EDT)</option>

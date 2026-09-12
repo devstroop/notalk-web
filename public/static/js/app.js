@@ -83,7 +83,7 @@ function showToast(type, message) {
     info: 'bg-blue-50 text-blue-800 border-blue-200',
   };
   var toast = document.createElement('div');
-  toast.className = 'fixed top-4 right-4 z-[100] px-4 py-3 rounded-xl text-sm border shadow-lg toast-enter max-w-sm ' + (colors[type] || colors.info);
+  toast.className = 'fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg text-sm border shadow-lg toast-enter max-w-sm ' + (colors[type] || colors.info);
   toast.textContent = message;
   document.body.appendChild(toast);
   setTimeout(function() {
